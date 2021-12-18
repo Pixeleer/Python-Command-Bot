@@ -69,7 +69,7 @@ while __on__:
                 COMMUNICATION.FORMAT.normal(f"Input switched to microphone")
 
     #For microphone
-    if srcheck() and input_type == 'audible':
+    elif srcheck() and input_type == 'audible':
         r = sr.Recognizer()
 
         with sr.Microphone() as source:

@@ -340,7 +340,7 @@ def process(text,user, isAudible=False):
 
 
     context = ContextV3(text)
-    print(context)
+
     if context is None:
         COMMUNICATION.FORMAT.to_error(f"There was an error comprehending some of your words i'm afraid", audible)
         return
