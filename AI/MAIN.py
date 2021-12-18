@@ -1,12 +1,13 @@
 DATABASE = 'DATABASE.JSON'
 
-import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
+
+from MODULES import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
 import json,os
 import warnings
 
 # Uncomment this bit out if you have the speech_recognition module installed,
 # errors will occur if module not referenced as sr
-'''import speech_recognition as sr'''
+import speech_recognition as sr
 
 def startup():
     user_name = input(f'[Login]\nPlease enter your Username\n')
