@@ -1,6 +1,6 @@
 DATABASE = 'DATABASE.JSON'
 
-from AI import FRAMEWORK as _FRAMEWORK
+import FRAMEWORK as _FRAMEWORK
 from datetime import datetime
 from random import randint
 import os,sys,math

@@ -1,6 +1,8 @@
 DATABASE = 'DATABASE.json'
 AIAUDIO = 'Sarah.mp3'
 
+import os,time,sys,warnings
+
 
 answer_types = {
 'intro': [
@@ -15,17 +17,23 @@ answer_types = {
 greeting_types=['Why hello','How may I be of service']
 goodbye_types=['See ya later', 'Bye now', 'Adios', 'Farewell']
 
-from gtts import gTTS
-import os,time,sys
+# Uncomment these bits out if you have the gtts (Google Text to Speech) AND mutagen
+#  modules installed!
+# errors will occur if module not referenced as gTTS and MP3 respecitively, or respecitively refrenced the same globally
+'''from gtts import gTTS'''
+'''from mutagen.mp3 import MP3'''
 
-def thenaudio(t,l='en'):
-    # print(t)
-    tts = gTTS(text=t, lang=l)
-    tts.save(AIAUDIO)
-    os.system(AIAUDIO)
-    from mutagen.mp3 import MP3
-    audio = MP3(AIAUDIO)
-    time.sleep(audio.info.length)
+def thenaudio(t):
+    # Defaulted to english Version 1.0.0
+    try:
+        tts = gTTS(text=t, lang='en')
+        tts.save(AIAUDIO)
+        os.system(AIAUDIO)
+        audio = MP3(AIAUDIO)
+        time.sleep(audio.info.length)
+    except:
+        warnings.warn('GTTS or mutagen modules not enabled/installed')
+        print('\nSpeech: ',t)
 
 
 from random import randint
@@ -46,39 +54,48 @@ def random_selection(collection,super=False):
         return collection
 
 
-def greet(name, out=False):
+def greet(name, out=False, rtn=False):
     name = str(name)
     b, e = '~| ', ' |~'
     b, e = '', ''
     output = random_selection(greeting_types)
     if out:
-        print("".join([b, output, name, e]))
+        thenaudio("".join([b, output, name, e]))
     else:
-        return "".join([b, output, name, e])
+        if rtn:
+            return "".join([b, output, name, e])
+        else:
+            print("".join([b, output, name, e]))
 
 
-def goodbye(name, out=False):
+
+def goodbye(name, out=False, rtn=False):
     text = str(name)
     b, e = '~| ', ' |~'
     b, e = '', ''
     output = random_selection(goodbye_types)
     if out:
-        print("".join([b, output, name, e]))
+        thenaudio("".join([b, output, name, e]))
     else:
-        return "".join([b, output, name, e])
+        if rtn:
+            return "".join([b, output, name, e])
+        else:
+            print("".join([b, output, name, e]))
 
 
 class FORMAT:
     @staticmethod
-    def to_special(text,out=False):
+    def to_special(text, out=False, rtn=False):
         text = str(text)
         b,e = '~| ',' |~'
         b, e = '', ''
         if out:
-            # print("".join([b,text,e]))
             thenaudio("".join([b,text,e]))
         else:
-            return "".join([b,text,e])
+            if rtn:
+                return "".join([b,text,e])
+            else:
+                print("".join([b, text, e]))
 
     @staticmethod
     def to_error(text,out=False):
@@ -86,13 +103,15 @@ class FORMAT:
         b, e = '!| ', " |!"
         b, e = '', ''
         if out:
-            # print("".join([b,text,e]))
             thenaudio("".join([b,text,e]))
         else:
-            return "".join([b,text,e])
+            if rtn:
+                return "".join([b,text,e])
+            else:
+                print("".join([b,text,e]))
 
     @staticmethod
-    def to_answer(text,out=False):
+    def to_answer(text,out=False, rtn=False):
         text = str(text)
         b, e = '~| ',' |~'
         b, e = '', ''
@@ -103,32 +122,38 @@ class FORMAT:
             text_char[0] = text_char[0].lower()
             text = ''.join(text_char)
             if out:
-                # print("".join([b, output, text, e]))
                 thenaudio("".join([b, output, text, e]))
             else:
-                return "".join([b, output, text, e])
+                if rtn:
+                    return "".join([b, output, text, e])
+                else:
+                    print("".join([b, output, text, e]))
         else:
             if a_t[0] == 'outro':
                 output = random_selection(answer_types['outro'])
                 if out:
-                    # print("".join([b, text, output, e]))
                     thenaudio("".join([b, text, output, e]))
                 else:
-                    return "".join([b, text, output, e])
+                    if rtn:
+                        return "".join([b, text, output, e])
+                    else:
+                        print("".join([b, text, output, e]))
 
     @staticmethod
-    def normal(text,out=False):
+    def normal(text,out=False, rtn=False):
         text = str(text)
         b,e = '| ',' |'
         b, e = '', ''
         if out:
-            # print("".join([b,text,e]))
             thenaudio("".join([b,text,e]))
         else:
-            return "".join([b,text,e])
+            if rtn:
+                return "".join([b,text,e])
+            else:
+                print("".join([b,text,e]))
 
     @staticmethod
-    def to_group(collection,out=False,alone=False):
+    def to_group(collection,out=False, rtn=False,alone=False):
         b, e = '| ', ' |'
         b, e = '', ''
         limit = 10
@@ -143,15 +168,19 @@ class FORMAT:
             text += '.'
 
         if out and not alone:
-            # print("".join([b,text,e]))
             thenaudio("".join([b,text,e]))
         elif not alone:
-            return "".join([b,text,e])
+            if rtn:
+                return "".join([b,text,e])
+            else:
+                print("".join([b,text,e]))
         elif out and alone:
-            # print(text)
             thenaudio(text)
         elif alone:
-            return text
+            if rtn:
+                return text
+            else:
+                print(text)
 
 
 

@@ -1,7 +1,6 @@
 DATABASE = 'DATABASE.JSON'
-from AI import COMMUNICATION
+import COMMUNICATION
 import json
-from CollectiveOp import NumOp
 
 class DATA:
     @staticmethod
@@ -199,7 +198,9 @@ class DATA:
                 area[section] = new_value
                 with open(DATABASE,'w') as w_database:
                     json.dump(data,w_database,indent=4)
+
         if clear:
+            # To do
             pass
 
 

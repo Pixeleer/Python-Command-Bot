@@ -1,7 +1,12 @@
 DATABASE = 'DATABASE.JSON'
-from AI import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
-import json,os,speech_recognition as sr
-r = sr.Recognizer()
+
+import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
+import json,os
+import warnings
+
+# Uncomment this bit out if you have the speech_recognition module installed,
+# errors will occur if module not referenced as sr
+'''import speech_recognition as sr'''
 
 def startup():
     user_name = input(f'[Login]\nPlease enter your Username\n')
@@ -37,23 +42,34 @@ def startup():
 
 USER = startup()
 UpdateData.USER = USER
-greet = COMMUNICATION.random_selection(COMMUNICATION.greeting_types,True)
-COMMUNICATION.FORMAT.to_special(f'{greet} {USER}!',True)
+
+__on__,input_type = True,'typed'
+
+greet = COMMUNICATION.random_selection(COMMUNICATION.greeting_types, super=True)
+COMMUNICATION.FORMAT.to_special(f'{greet} {USER}!', input_type=='audible')
+
+def srcheck():
+    try:
+        import speech_recognition
+        return True
+    except:
+        warnings.warn('Speech Recognition Module not enabled/installed')
+        return False
 
 
-__on__,input_type = True,'type'
 while __on__:
     #For typing
-    if input_type == 'type':
+    if input_type == 'typed':
         run = Processor.process(input(), USER)
         if run == 'shutdown':
             break
         elif run == 'switch input':
-            input_type = 'mic'
-            COMMUNICATION.FORMAT.normal(f"Input switched to microphone",True)
+            if srcheck():
+                input_type = 'audible'
+                COMMUNICATION.FORMAT.normal(f"Input switched to microphone")
 
     #For microphone
-    if input_type == 'mic':
+    if srcheck() and input_type == 'audible':
         r = sr.Recognizer()
 
         with sr.Microphone() as source:
@@ -61,11 +77,11 @@ while __on__:
             audio = r.listen(source)
 
         try:
-            run = Processor.process(r.recognize_google(audio),USER)
+            run = Processor.process(r.recognize_google(audio),USER, True)
             if run == 'shutdown':
                 break
             elif run == 'switch input':
-                input_type = 'type'
+                input_type = 'typed'
                 COMMUNICATION.FORMAT.normal(f"Input switched to typed", True)
         except sr.UnknownValueError:
             __excuse__ = None
