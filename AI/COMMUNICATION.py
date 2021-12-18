@@ -1,0 +1,157 @@
+DATABASE = 'DATABASE.json'
+AIAUDIO = 'Sarah.mp3'
+
+
+answer_types = {
+'intro': [
+    'That would be ', "I believe that's ", "Pretty sure it's ", "I'm certain that it's ",
+    'It has got to be ', "Surely it's "
+],
+'outro': [
+    ' I believe.', ' if I remember correctly.', ' surely ', ''
+]
+}
+
+greeting_types=['Why hello','How may I be of service']
+goodbye_types=['See ya later', 'Bye now', 'Adios', 'Farewell']
+
+from gtts import gTTS
+import os,time,sys
+
+def thenaudio(t,l='en'):
+    # print(t)
+    tts = gTTS(text=t, lang=l)
+    tts.save(AIAUDIO)
+    os.system(AIAUDIO)
+    from mutagen.mp3 import MP3
+    audio = MP3(AIAUDIO)
+    time.sleep(audio.info.length)
+
+
+from random import randint
+def random_selection(collection,super=False):
+    if isinstance(collection, list):
+        if super:
+            return random_selection(collection[randint(0,len(collection)-1)],True)
+        else:
+            return collection[randint(0,len(collection)-1)]
+    elif isinstance(collection,dict):
+        if super:
+            c = [v for i, v in collection.items()]
+            return random_selection(c[randint(0,len(c)-1)],True)
+        else:
+            c = [[i, v] for i, v in collection.items()]
+            return c[randint(0,len(c)-1)]
+    else:
+        return collection
+
+
+def greet(name, out=False):
+    name = str(name)
+    b, e = '~| ', ' |~'
+    b, e = '', ''
+    output = random_selection(greeting_types)
+    if out:
+        print("".join([b, output, name, e]))
+    else:
+        return "".join([b, output, name, e])
+
+
+def goodbye(name, out=False):
+    text = str(name)
+    b, e = '~| ', ' |~'
+    b, e = '', ''
+    output = random_selection(goodbye_types)
+    if out:
+        print("".join([b, output, name, e]))
+    else:
+        return "".join([b, output, name, e])
+
+
+class FORMAT:
+    @staticmethod
+    def to_special(text,out=False):
+        text = str(text)
+        b,e = '~| ',' |~'
+        b, e = '', ''
+        if out:
+            # print("".join([b,text,e]))
+            thenaudio("".join([b,text,e]))
+        else:
+            return "".join([b,text,e])
+
+    @staticmethod
+    def to_error(text,out=False):
+        text = str(text)
+        b, e = '!| ', " |!"
+        b, e = '', ''
+        if out:
+            # print("".join([b,text,e]))
+            thenaudio("".join([b,text,e]))
+        else:
+            return "".join([b,text,e])
+
+    @staticmethod
+    def to_answer(text,out=False):
+        text = str(text)
+        b, e = '~| ',' |~'
+        b, e = '', ''
+        a_t = random_selection(answer_types)
+        if a_t[0] == 'intro':
+            output = random_selection(answer_types['intro'])
+            text_char = list(text)
+            text_char[0] = text_char[0].lower()
+            text = ''.join(text_char)
+            if out:
+                # print("".join([b, output, text, e]))
+                thenaudio("".join([b, output, text, e]))
+            else:
+                return "".join([b, output, text, e])
+        else:
+            if a_t[0] == 'outro':
+                output = random_selection(answer_types['outro'])
+                if out:
+                    # print("".join([b, text, output, e]))
+                    thenaudio("".join([b, text, output, e]))
+                else:
+                    return "".join([b, text, output, e])
+
+    @staticmethod
+    def normal(text,out=False):
+        text = str(text)
+        b,e = '| ',' |'
+        b, e = '', ''
+        if out:
+            # print("".join([b,text,e]))
+            thenaudio("".join([b,text,e]))
+        else:
+            return "".join([b,text,e])
+
+    @staticmethod
+    def to_group(collection,out=False,alone=False):
+        b, e = '| ', ' |'
+        b, e = '', ''
+        limit = 10
+
+        global text
+        text = ', '.join([str(_) for i, _ in enumerate(collection) if i < limit - 1])
+        if len(collection) > limit:
+            text += f' and ({len(collection) - limit} more)'
+        else:
+            collection[-1] = 'and ' + str(collection[-1])
+            text = ', '.join([str(_) for i, _ in enumerate(collection) if i < limit])
+            text += '.'
+
+        if out and not alone:
+            # print("".join([b,text,e]))
+            thenaudio("".join([b,text,e]))
+        elif not alone:
+            return "".join([b,text,e])
+        elif out and alone:
+            # print(text)
+            thenaudio(text)
+        elif alone:
+            return text
+
+
+
