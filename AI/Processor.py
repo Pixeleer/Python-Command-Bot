@@ -276,6 +276,8 @@ def process(text,user, isAudible=False):
     audible = isAudible # global varaiable 
     if text.lower() in ['shutdown','shut down']:
         return 'shutdown'
+    elif text.lower() in ['switch output, switch bot audio']:
+        return 'switch output'
     elif text.lower() in ['switch input']:
         return 'switch input'
     elif text.lower() in ['repeat that','repeat','can you repeat that','could you repeat that','please repeat that']:
@@ -293,7 +295,7 @@ def process(text,user, isAudible=False):
 
 
     context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
-    print(context)
+    # print(context) FOR DEBUG
     if context is None:
         COMMUNICATION.FORMAT.to_error(f"There was an error comprehending some of your words I'm afraid", audible)
         return
@@ -303,7 +305,7 @@ def process(text,user, isAudible=False):
         for index,_ in enumerate(context):
             if _.lower() in data_keywords['leave_setting']:
                 personal = False
-                COMMUNICATION.FORMAT.normal(f"Ok, I'm no longer learning", audible)
+                COMMUNICATION.FORMAT.normal(f"Leaving personal setting", audible)
                 return None #Finished
             elif _.lower() in data_keywords['enter_PS']:
                 adding = True
@@ -439,7 +441,7 @@ def process(text,user, isAudible=False):
                     COMMUNICATION.FORMAT.normal(info,audible)
                 except:
                     COMMUNICATION.FORMAT.normal(f'That information is not found in my database',audible)
-            elif _.lower() in ['what is','what does']:
+            elif lowered in ['what is','what does']:
                 try:
                     if context[index+2] not in _math_keywords:
                         try:
@@ -456,13 +458,13 @@ def process(text,user, isAudible=False):
                     except:
                         __excuse__ = None
 
-        elif _.lower() == 'say':
+        elif lowered == 'say':
             try:
                 COMMUNICATION.FORMAT.normal(" ".join(context[index+1:]), audible)
             except:
                 __excuse__ = None
 
-        elif _.lower() in data_keywords['enter_PS']:
+        elif lowered in data_keywords['enter_PS']:
             if not personal:
                 personal = True
-                COMMUNICATION.FORMAT.normal(f"OK, what would you want me to learn?",audible)
+                COMMUNICATION.FORMAT.normal(f"I am now linked to your personal setting",audible)

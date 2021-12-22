@@ -44,7 +44,7 @@ def startup():
 USER = startup()
 UpdateData.USER = USER
 
-__on__,input_type = True,'typed'
+__on__,input_type,botaudio = True,'typed',True
 
 greet = COMMUNICATION.random_selection(COMMUNICATION.greeting_types, super=True)
 COMMUNICATION.FORMAT.to_special(f'{greet} {USER}!', input_type=='audible')
@@ -61,13 +61,16 @@ def srcheck():
 while __on__:
     #For typing
     if input_type == 'typed':
-        run = Processor.process(input(), USER)
+        run = Processor.process(input(), USER,botaudio)
         if run == 'shutdown':
             break
         elif run == 'switch input':
             if srcheck():
                 input_type = 'audible'
                 COMMUNICATION.FORMAT.normal(f"Input switched to microphone")
+        elif run == 'switch output':
+            botaudio = not botaudio
+            COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}')
 
     #For microphone
     elif srcheck() and input_type == 'audible':
@@ -83,10 +86,14 @@ while __on__:
                 break
             elif run == 'switch input':
                 input_type = 'typed'
-                COMMUNICATION.FORMAT.normal(f"Input switched to typed", True)
+                COMMUNICATION.FORMAT.normal(f"Input switched to typed", botaudio)
+            elif run == 'switch output':
+                botaudio = not botaudio
+                COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}')
+
         except sr.UnknownValueError:
-            __excuse__ = None
+            pass
         except sr.RequestError as e:
-            __excuse__ = None
+            pass
 
 COMMUNICATION.FORMAT.normal(f'Adios {USER}!',True)
