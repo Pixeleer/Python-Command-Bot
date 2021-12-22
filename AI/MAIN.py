@@ -47,7 +47,7 @@ UpdateData.USER = USER
 __on__,input_type,botaudio = True,'typed',True
 
 greet = COMMUNICATION.random_selection(COMMUNICATION.greeting_types, super=True)
-COMMUNICATION.FORMAT.to_special(f'{greet} {USER}!', input_type=='audible')
+COMMUNICATION.FORMAT.to_special(f'{greet} {USER}!', botaudio)
 
 def srcheck():
     try:
