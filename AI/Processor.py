@@ -259,16 +259,16 @@ def learner_processing(text,user):
 
                     if isinstance(Value, dict):
                         x = extract(Value, isinstance(Value, dict))
-                        COMMUNICATION.FORMAT.to_group(f"{x} {nickname}",out=True)
+                        COMMUNICATION.FORMAT.to_group(f"{x} {nickname}",out=audible)
                     elif isinstance(Value,list):
                         x = COMMUNICATION.FORMAT.to_group(Value, rtn=True,alone=True)
-                        COMMUNICATION.FORMAT.normal(f"{x} {nickname}",audible)
+                        COMMUNICATION.FORMAT.normal(f"{x} {nickname}",out=audible)
                     else:
-                        COMMUNICATION.FORMAT.normal(f"{Value} {nickname}",audible)
+                        COMMUNICATION.FORMAT.normal(f"{Value} {nickname}",out=audible)
                     return None
             except:
                 __excuse__ = None
-        COMMUNICATION.FORMAT.normal(f"I don't know {text}", audible)
+        COMMUNICATION.FORMAT.normal(f"I don't know {text}", out=audible)
 
 
 personal,adding = False,False

@@ -18,7 +18,7 @@ greeting_types=['Why hello','How may I be of service']
 goodbye_types=['See ya later', 'Bye now', 'Adios', 'Farewell']
 
 
-from gtts import gTTS
+from MODULES.gtts import gTTS
 from mutagen.mp3 import MP3
 
 def thenaudio(t):

@@ -61,7 +61,7 @@ def srcheck():
 while __on__:
     #For typing
     if input_type == 'typed':
-        run = Processor.process(input(), USER,botaudio)
+        run = Processor.process(input(), USER, botaudio)
         if run == 'shutdown':
             break
         elif run == 'switch input':
@@ -81,12 +81,12 @@ while __on__:
             audio = r.listen(source)
 
         try:
-            run = Processor.process(r.recognize_google(audio),USER, True)
+            run = Processor.process(r.recognize_google(audio),USER, botaudio)
             if run == 'shutdown':
                 break
             elif run == 'switch input':
                 input_type = 'typed'
-                COMMUNICATION.FORMAT.normal(f"Input switched to typed", botaudio)
+                COMMUNICATION.FORMAT.normal(f"Input switched to typed", out=botaudio)
             elif run == 'switch output':
                 botaudio = not botaudio
                 COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}')
