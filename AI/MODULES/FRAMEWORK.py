@@ -1,3 +1,4 @@
+import os
 DATABASE = 'DATABASE.JSON'
 
 import COMMUNICATION
