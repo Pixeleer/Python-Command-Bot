@@ -13,23 +13,24 @@ special_characters = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+'
                       ':','|', ',', '<', '.', '>', '/', '?'
 ]
 math_keywords = {
-    'addition_dir': ['plus','+','combined with','joined with'],
-    'addition_pas': ['add','combine','join', 'sum of'],
-    'subtraction_dir' : ['minus','-','taken from'],
-    'subtraction_pas': ['subtract','take','negate'],
-    'multiplication_dir': ['times', '*'],
-    'multiplication_pas': ['product of', 'multiple of'],
-    'division_dir': ['divided by', '/', 'over'],
-    'division_pas': ['quotient of'],
-    'powers_dir': ['^', '**','to the power of','to the'],
-    'powers_dir_super': ['squared','tripled','quadrupled','turkied']
+    'dir_add': ['plus','+','combined with','joined with'],
+    'pas_add': ['add','combine','join', 'sum of'],
+    'dir_sub' : ['minus','-','taken from'],
+    'pas_sub': ['subtract','take','negate'],
+    'dir_mult': ['times', '*'],
+    'pas_mult': ['product of', 'multiple of'],
+    'dir_div': ['divided by', '/', 'over'],
+    'pas_div': ['quotient of'],
+    'dir_pow': ['^', '**','to the power of','to the'],
 }
+
+convert_keywords = {'dir_pow_flex': ['squared','tripled','quadrupled','turkied']}
 data_keywords = {
-    'return_dir': ['get',"what's",'what is','who is','what are','what does'],
-    'return_pas': ['can i have','can you tell me'],
-    'enter_pm': ['personal setting', 'personal settings','enter personal setting', 'open personal setting'],
-    'leave_pm': ['exit','leave setting','exit setting'],
-    'enter_add_pm': ['learn','acknowledge']
+    'dir_return': ['get',"what's",'what is','who is','what are','what does'],
+    'pas_return': ['can i have','can you tell me'],
+    'enter_PS': ['personal setting', 'personal settings','enter personal setting', 'open personal setting', 'enter personal', 'open personal'],
+    'leave_setting': ['exit','leave setting','exit setting'],
+    'add_INFO': ['learn','acknowledge']
 }
 custom_variables = {}
 def group(collection):
@@ -41,243 +42,195 @@ def group(collection):
             result = _
 
     return result
-_math_keywords,_data_keywords = group(math_keywords),group(data_keywords)
-def check_fkw(string):
-    string = str(string.lower())
-    string_chars = list(string)
-    ignore_dict = {}
-    diff,loop,last_index = 0,0,None
+_math_keywords,_data_keywords = group(math_keywords),group(data_keywords)#,group(convert_keywords)
+                                       #^ _convert_keywords
+                                       #v
+KEYWORDS = _math_keywords+_data_keywords
 
-    while loop < len(string):
-        for keyword in _math_keywords+_data_keywords:
-            to_find = keyword.lower()
-            _from = string.find(to_find)
-            if to_find in ignore_dict:
-                _from = string.find(to_find, ignore_dict[to_find], len(string))
-            if _from != -1:
-                ignore_dict.update({f'{keyword}': _from + len(keyword)})
-                step = _from + len(keyword) - 1
-                if len(keyword) > 0:
-                    if last_index is None or _from > last_index:
-                        last_index = _from
-                        while step > _from:
-                            string_chars.pop(step - diff)
-                            step -= 1
-                        string_chars[step - diff] = to_find
+def ContextV4(string):
+    array = list(string)
+    toReturn = list()
 
-                    elif _from < last_index:
-                        last_index = _from
-                        while step > _from:
-                            string_chars.pop(step)
-                            step -= 1
-                        string_chars[step] = to_find
-                    diff = diff + len(to_find) - 1
-                else:
-                    string_chars[_from] = to_find
-        loop += 1
+    delim = 'OEBOFXO'
+    delimat = list()
+    curIndex = 0
+    ignore = list()
 
-    return string_chars
-def ContextV3(text):
-    text_array = check_fkw(text)
-    if text_array is None:
-        return None
-    a = list()
-    build = None
+    for keyword in KEYWORDS:
+        foundAt = string.find(keyword,curIndex)
+        while foundAt != -1 and foundAt not in ignore:
+            # Duplicate case 1
+            if keyword == '*' and string[foundAt+1] == '*':
+                break
+            ignore += range(foundAt, len(keyword))
+            delimat.append(foundAt)
+            delimat.append(foundAt+len(keyword))
+            curIndex = foundAt+1
+            foundAt = string.find(keyword,curIndex)
 
-    for i,_ in enumerate(text_array):
-        if _ == " ":
-            if build is not None:
-                a.append(build)
-                build = None
+        curIndex = 0
+
+    # insert delims into array
+    for i in reversed(sorted(delimat)):
+        array.insert(i,delim)
+        
+    # join array and split by delims
+    array = ''.join(array).split(delim)
+    for i,text in enumerate(array):
+        if text == '':
+            # array.remove(text) no need
             continue
-        if build is None and _.isnumeric(): # start build with number number character
-            build = _
-        elif build is None and not _.isnumeric(): # start build with letter character
-            build = _
-        elif (build[-1].isnumeric() or build[-1] == '.') and _.isnumeric(): # add number character to build if build is number
-            build += _
-        elif not build.isnumeric() and not _.isnumeric():# add letter character to build if build is letter
-            build += _
-        elif build.isnumeric() and not _.isnumeric():
-            if _ == '.':
-                build += _
-            else:
-                a.append(build)
-                build = _
-        elif not build.isnumeric() and _.isnumeric():
-            a.append(build)
-            build = _
+        elif text not in KEYWORDS:
+            toReturn += text.split()
+        else:
+            toReturn.append(text) 
 
-    if build is not None:
-        a.append(build)
+    return toReturn
 
-    return a
-def math(action,context,index,x=None):
-    def numify(num):
+
+def numify(num):
+    num = custom_variables.get(num,num)
+    try:
         try:
             return int(num)
         except:
             return float(num)
+    except:
+        return num
 
-    def round(num):
+def isNum(num):
+    num = custom_variables.get(num,num)
+    try:
         try:
-            if isinstance(num,float):
-                nl = list(str(num))
-                while nl[-3] != '.':
-                    nl.pop(-1)
-                return "".join(nl)
-            else:
-                return num
+            if int(num):
+                return True
         except:
-            return num
+            if float(num):
+                return True
+    except:
+        return False 
 
-    if action == math_keywords['addition_dir']:
-        _one,_two = x or context[index-1], context[index+1]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+def round(num):
+    num = custom_variables.get(num) or num
+    if isNum(num) and int(num) == num:
+        return int(num)
+    else:
+        return num
+
+
+'''def conversion(INFO,WON):
+    # Unpack conversion info
+    a,conv = INFO
+
+    if conv in convert_keywords['dir_pow_flex']:
+        a = WON or custom_variables.get(a,a)
 
         try:
-            x,y = numify(_one),numify(_two)
-            return round(x+y)
+            a = numify(a)
+            if conv == 'squared':
+                return round(a**2)
+            elif conv == 'tripled':
+                return round(a**3)
+            elif conv == 'quadrupled':
+                return round(a**4)
+            elif conv == 'turkied':
+                return round(a**5)
+        except:
+            COMMUNICATION.FORMAT.to_error(f'Could not bring {a} to power',audible)'''
+
+def math(e,WON):
+    # Unpack mathematical info
+    a,op,div,b = None,None,None,None
+    if len(e) == 3:     # Direct equation
+        a,op,b = e
+    elif len(e) == 4:   # Passive equation
+        op,a,div,b = e
+
+    if op in math_keywords['dir_add']:
+        # Set a to WON|look for custom_variable a|use a, Look for custom_variable b|use b
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+
+        try:
+            return round(numify(a)+numify(b))
         except:
             try:
-                x = _one + _two
-                return round(x)
+                return a+b
             except:
-                COMMUNICATION.FORMAT.to_error(f'Unable to add {_one} and {_two}',True)
-    if action == math_keywords['addition_pas']:
-        _one, _two = x or context[index + 1], context[index + 3]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+                COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}',audible)
+    elif op in math_keywords['pas_add']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
         try:
-            x, y = numify(_one), numify(_two)
-            return round(x+y)
+            return round(numify(a)+numify(b))
         except:
             try:
-                x = _one + _two
-                return round(x)
+                return a+b
             except:
-                COMMUNICATION.FORMAT.to_error(f'Unable to add {_one} and {_two}', True)
+                COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}', True)
 
-    if action == math_keywords['subtraction_dir']:
-        _one, _two = x or context[index - 1], context[index + 1]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+    elif op in math_keywords['dir_sub']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
         try:
-            x, y = numify(_one), numify(_two)
-            if context[index] == 'taken from':
-                return round(y-x)
+            a,b = numify(a), numify(b)
+            if div == 'taken from':
+                return round(b-a)
             else:
-                return round(x-y)
+                return round(a-b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {_one} and {_two}', True)
-
-    if action == math_keywords['subtraction_pas']:
-        _one,_two = x or context[index+1],context[index+3]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', audible)
+    elif op in math_keywords['pas_sub']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
         try:
-            x,y = numify(_one),numify(_two)
-            if context[index] == 'from':
-                return round(y-x)
+            a,b = numify(a),numify(b)
+            if div == 'from':
+                return round(b-a)
             else:
-                return round(x-y)
+                return round(a-b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {_one} and {_two}',True)
-    if action == math_keywords['multiplication_dir']:
-        _one, _two = x or context[index - 1], context[index + 1]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}',audible)
+    
+    elif op in math_keywords['dir_mult']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        custom_variables.get(b)
 
         try:
-            x, y = numify(_one), numify(_two)
-            return round(x*y)
+            a,b = numify(a), numify(b)
+            return round(a*b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {_one} and {_two}', True)
-
-    if action == math_keywords['multiplication_pas']:
-        _one,_two = x or context[index+1],context[index+3]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', audible)
+    elif op in math_keywords['pas_mult']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
         try:
-            x, y = numify(_one), numify(_two)
-            return round(x*y)
+            a,b = numify(a), numify(b)
+            return round(a*b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {_one} and {_two}', True)
+            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', audible)
 
-    if action == math_keywords['division_dir']:
-        _one, _two = x or context[index - 1], context[index + 1]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+    elif op in math_keywords['dir_div']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
         try:
-            x, y = numify(_one), numify(_two)
-            return round(x/y)
+            return round(numify(a)/numify(b))
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {_one} and {_two}', audible)
-
-    if action == math_keywords['division_pas']:
-        _one,_two = x or context[index+1],context[index+3]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
+            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', audible)
+    elif op in math_keywords['pas_div']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
         try:
-            x, y = numify(_one), numify(_two)
-            return round(x/y)
+            return round(numify(a)/numify(b))
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {_one} and {_two}', audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', audible)
 
-    if action == math_keywords['powers_dir']:
-        _one, _two = x or context[index - 1], context[index + 1]
-        if _one in custom_variables:
-            _one = custom_variables[_one]
-        if _two in custom_variables:
-            _two = custom_variables[_two]
-
-        if _one == 'power':
-            _one = context[index - 2]
-        try:
-            x, y = numify(_one), numify(_two)
-            return round(x**y)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to bring {_one} to the power of {_two}', audible)
-
-    if action == math_keywords['powers_dir_super']:
-        _num,_format = x or context[index-1], context[index]
-        if _num in custom_variables:
-            _num = custom_variables[_num]
+    elif op in math_keywords['dir_pow']:
+        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
         try:
-            _num = numify(_num)
-            if _format == 'squared':
-                return round(_num**2)
-            elif _format == 'tripled':
-                return round(_num**3)
-            elif _format == 'quadrupled':
-                return round(_num**4)
-            elif _format == 'turkied':
-                return round(_num**5)
+            return round(numify(a)**numify(b))
         except:
-            COMMUNICATION.FORMAT.to_error(f'Could not bring {_num} to power',audible)
-def personal_processing(text,user='Creator'):
+            COMMUNICATION.FORMAT.to_error(f'Unable to bring {a} to the power of {b}', audible)
+
+def learner_processing(text,user):
     UpdateData.all()
     global nickname
     nickname = _FRAMEWORK.DATA.get(f"{user}.personal.nickname")
@@ -329,28 +282,30 @@ def process(text,user, isAudible=False):
         os.system(AIAUDIO)
         return
     elif text.lower() in ['sarah','sara']:
-        a = ['yes?','uh huh?','mm?','what?','need something?','hmm?',f'yes {user}']
+        a = ['Yes?','Uh huh?','Mm?','What?','Need something?','Hmm?',f'Yes {user}?']
         COMMUNICATION.FORMAT.normal(choice(a),audible)
         return
     elif text.lower() in ['hey','hi','hello','howdy']:
-        a = ['hey!','hi!','hello!','howdy!','salutations!',f'hi {user}']
+        a = ['Hey!','Hi!','Hello!','Howdy!','Salutations!',f'Hi {user}!']
         COMMUNICATION.FORMAT.normal(choice(a),audible)
         return
     global personal,adding
 
 
-    context = ContextV3(text)
+    context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
 
     if context is None:
-        COMMUNICATION.FORMAT.to_error(f"There was an error comprehending some of your words i'm afraid", audible)
+        COMMUNICATION.FORMAT.to_error(f"There was an error comprehending some of your words I'm afraid", audible)
         return
+    
+    
     if personal:
         for index,_ in enumerate(context):
-            if _.lower() in data_keywords['leave_pm']:
+            if _.lower() in data_keywords['leave_setting']:
                 personal = False
-                COMMUNICATION.FORMAT.normal(f"I'm now assigned to normal settings", audible)
+                COMMUNICATION.FORMAT.normal(f"Ok, I'm no longer learning", audible)
                 return None #Finished
-            elif _.lower() in data_keywords['enter_add_pm']:
+            elif _.lower() in data_keywords['enter_PS']:
                 adding = True
                 if _.lower() == 'done':
                     adding = False
@@ -372,126 +327,68 @@ def process(text,user, isAudible=False):
                     _FRAMEWORK.DATA.add_data(f'{user}.personal', {Label: Value})
                     COMMUNICATION.FORMAT.normal(f"Information learned", audible)
         if not adding:
-            personal_processing(text,user)
+            learner_processing(text,user)
         adding = False
         return None  # Finished
-    group_return = list()
 
     # won abbreviates 'Working On Number'
-    won = None
+    WON = None
+    #WOKW = None
     for index,_ in enumerate(context):
-        if _.lower() in math_keywords['addition_dir']:
-            result = math(math_keywords['addition_dir'],context,index,won)
-            if result is not None:
-                try:
-                    if context[index+2] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
-        if _.lower() in math_keywords['addition_pas']:
-            result = math(math_keywords['addition_pas'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index+4] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
-        if _.lower() in math_keywords['subtraction_dir']:
-            result = math(math_keywords['subtraction_dir'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 2] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible_output)
-        if _.lower() in math_keywords['subtraction_pas']:
-            result = math(math_keywords['subtraction_pas'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 4] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible_output)
-        if _.lower() in math_keywords['multiplication_dir']:
-            result = math(math_keywords['multiplication_dir'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 2] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
-        if _.lower() in math_keywords['multiplication_pas']:
-            result = math(math_keywords['multiplication_pas'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 4] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
-        if _.lower() in math_keywords['division_dir']:
-            result = math(math_keywords['division_dir'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 2] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
-        if _.lower() in math_keywords['division_pas']:
-            result = math(math_keywords['division_pas'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 4] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
-        if _.lower() in math_keywords['powers_dir']:
-            result = math(math_keywords['powers_dir'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 2] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
-        if _.lower() in math_keywords['powers_dir_super']:
-            result = math(math_keywords['powers_dir_super'], context, index, won)
-            if result is not None:
-                try:
-                    if context[index + 1] in _math_keywords:
-                        won = result
-                    else:
-                        won = None
-                        COMMUNICATION.FORMAT.to_answer(result, audible)
-                except:
-                    COMMUNICATION.FORMAT.to_answer(result, audible)
 
-        if _.lower() in ['=','equals','equal','is']:
+
+        lowered = _.lower() #Implement this new change#
+
+        ##  IsMath?
+        if lowered in _math_keywords:
+            
+            if index+1 < len(context):  # 2 OPERANDS BASE CASE
+                if index-1 >= 0 and (isNum(context[index-1]) or WON):   #(dir)
+                    e = context[index-1:index+2]    # a op 
+                    result = math(e,WON)
+                    if result:
+                        # if index+2 is in range, chech if context at index+2 is a math_keyword
+                        WON = result if index+2 < len(context) and context[index+2] in _math_keywords else None
+                        if not WON:
+                            result = 'negative '+str(result)[1:] if isNum(result) and numify(result) < 0 else result
+                            COMMUNICATION.FORMAT.to_answer(result, audible)
+
+                elif index+3 < len(context):    #(passive)
+                    e = context[index:index+4]  # op a div b
+                    result = math(e,WON)
+                    if result:
+                        WON = result if index+4 < len(context) and context[index+4] in _math_keywords else None
+                        if not WON:
+                            result = 'negative '+str(result)[1:] if isNum(result) and numify(result) < 0 else result
+                            COMMUNICATION.FORMAT.to_answer(result, audible)
+
+            ## IsConversion?
+            '''elif lowered in _convert_keywords:
+                if index-1 or WOKW >= 0:   # inderect?
+                    e = context[index-1:index+1]    # a,op
+                    result = conversion(e,WON or WOKW)
+                    if result:
+                        # if index+2 is in range, chech if context at index+2 is a math_keyword
+                        if index+1 < len(context):
+                            nextkw = context[index+1]
+                            if nextkw in _convert_keywords: # if next keyword is a conversion
+                                WOKW  = result 
+                            elif (numify(result) and nextkw in _math_keywords): # if result is a number and next keyword is mathematical
+                                WON = result
+                            else:
+                                WON = None
+                        else:
+                            WON = None
+
+                        if not WON:
+                            # if result is negative, output is 'negative <result>'
+                            result = 'negative '+str(result)[1:] if numify(result) and result < 0 else result
+                            COMMUNICATION.FORMAT.to_answer(result, audible)
+                    else:
+                        COMMUNICATION.FORMAT.to_error('Faulty formula', audible) '''
+
+
+        elif lowered in ['=','equals','equal','is']:          # Variable Assignment
             variable,value = context[index-1],context[index+1]
             if not variable.isnumeric():
                 if value in custom_variables and not value.isnumeric():
@@ -503,13 +400,16 @@ def process(text,user, isAudible=False):
             else:
                 COMMUNICATION.FORMAT.to_error(f'Cannot assign {variable} to {value}',audible)
 
+            '''Although we are successfully assigning variables.
+               Usage such as x = x+x or a^2 + b^2 = c^2 is faulty'''
 
-        if _.lower() in data_keywords['return_dir']:
+
+
+        elif lowered in data_keywords['dir_return']:    # Returning Data Queries
             if context[index+1].lower() == 'my':
                 request = context[index+2]
-                if request.lower() == 'personal': # Personal is private so we don't give info
-                    COMMUNICATION.FORMAT.to_special(f'That data is locked',audible)
-                    return None
+
+
                 if request.lower() in ['name','username']:
                     COMMUNICATION.FORMAT.normal(f'You are {user}',audible)
                 elif request.lower() == 'password':
@@ -545,26 +445,27 @@ def process(text,user, isAudible=False):
                         try:
                             request = context[index + 1]
                             x = custom_variables[request]
-                            COMMUNICATION.FORMAT.normal(x,audible)
+                            COMMUNICATION.FORMAT.to_answer(x,audible)
                         except:
                             __excuse__ = None
                 except:
                     try:
                         request = context[index + 1]
                         x = custom_variables[request]
-                        COMMUNICATION.FORMAT.normal(x, audible)
+                        COMMUNICATION.FORMAT.to_answer(x, audible)
                     except:
                         __excuse__ = None
 
-                    # Although we are successfully assigning variables.
-                    # Usage such as x = x+x or a^2 + b^2 = c^2 is faulty
-        if _.lower() == 'say':
+        elif _.lower() == 'say':
             try:
                 COMMUNICATION.FORMAT.normal(" ".join(context[index+1:]), audible)
             except:
                 __excuse__ = None
 
-        if _.lower() in data_keywords['enter_pm']:
+        elif _.lower() in data_keywords['enter_PS']:
             if not personal:
                 personal = True
-                COMMUNICATION.FORMAT.normal(f"I'm now assigned to your personal settings",audible)
+                COMMUNICATION.FORMAT.normal(f"OK, what would you want me to learn?",audible)
+
+process('personal setting','user')
+process('what is my nickname','user')
