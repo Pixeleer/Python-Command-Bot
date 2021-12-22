@@ -1,7 +1,7 @@
 DATABASE = 'DATABASE.JSON'
 
 
-from MODULES import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
+import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
 import json,os
 import warnings
 
