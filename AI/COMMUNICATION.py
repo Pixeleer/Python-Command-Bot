@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 DATABASE = 'DATABASE.json'
 AIAUDIO = 'Sarah.mp3'
 
@@ -26,6 +27,7 @@ def thenaudio(t):
     try:
         tts = gTTS(text=t, lang='en')
         tts.save(AIAUDIO)
+        time.sleep(0.2) # fixes stutter?
         os.system(AIAUDIO)
         audio = MP3(AIAUDIO)
         time.sleep(audio.info.length)
@@ -98,7 +100,7 @@ class FORMAT:
     @staticmethod
     def to_error(text,out=False, rtn=False):
         text = str(text)
-        b, e = '!| ', " |!"
+        b, e = '!| Error ', " |!"
         b, e = '', ''
         if out:
             thenaudio("".join([b,text,e]))

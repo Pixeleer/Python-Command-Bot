@@ -1,5 +1,7 @@
+#!/usr/bin/python3
 DATABASE = 'DATABASE.JSON'
-
+with open(DATABASE,'w') as db:  # To initialize a database if none exists
+    db.write('{}')
 
 import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
 import json,os
@@ -25,7 +27,6 @@ def startup():
                 loops += 1
         except:
             loops = 0
-            _FRAMEWORK.DATA.create_directory(p=None,dir_name=user_name)
             print(f'Hello {user_name}!\n'
                   f'As a new user, I am required to have a password for your account.\n')
             while True:
@@ -35,7 +36,13 @@ def startup():
                 s_entry = input(f'Please re-enter your password for confirmation\n')
 
                 if entry == s_entry:
-                    _FRAMEWORK.DATA.add_data(f'{user_name}', {"password": entry})
+                    _FRAMEWORK.DATA.create_directory(p=None,dir_name=user_name)
+                    _FRAMEWORK.DATA.add_data(p=f'{user_name}', new_data={"password": entry})
+                    _FRAMEWORK.DATA.create_directory(p=f'{user_name}',dir_name='-custom-library')  # create custom library directory
+
+                    for preset_data in 'morning,afternoon,night,evening,meridiem,time,date,today,day,month,year,thread,process,system flags'.split(','):
+                        _FRAMEWORK.DATA.add_data(p=f'{user_name}', new_data={preset_data:''})
+
                     print('\nThank you! Your account is now setup and ready')
                     return user_name
 

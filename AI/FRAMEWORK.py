@@ -1,8 +1,25 @@
+#!/usr/bin/python3
 import os
 DATABASE = 'DATABASE.JSON'
 
 import COMMUNICATION
 import json
+
+def extract(collection, isdict=False):
+    a = list()
+    if isdict:
+        for key, _ in collection.items():
+            if isinstance(_, (int, str)):
+                a.append(_)
+            elif isinstance(_, (list, tuple, set, dict)):
+                a = a + extract(_, isinstance(_, dict))
+    else:
+        for _ in collection:
+            if isinstance(_, (int, str)):
+                a.append(_)
+            if isinstance(_, (list, tuple, set, dict)):
+                a = a + extract(_, isinstance(_, dict))
+    return a
 
 class DATA:
     @staticmethod
@@ -23,8 +40,8 @@ class DATA:
                 a.append(directory)
             a.append(collection_cpy)
             return a
-
-        return get_directories(dots_toindex())
+        return collection.split('.')
+        #return get_directories(dots_toindex())
 
     @staticmethod
     def get(request=None,all=False):
@@ -33,21 +50,6 @@ class DATA:
             if request is None:
                 return data
             elif all:
-                def extract(collection, isdict=False):
-                    a = list()
-                    if isdict:
-                        for key, _ in collection.items():
-                            if isinstance(_, (int, str)):
-                                a.append(_)
-                            elif isinstance(_, (list, tuple, set, dict)):
-                                a = a + extract(_, isinstance(_, dict))
-                    else:
-                        for _ in collection:
-                            if isinstance(_, (int, str)):
-                                a.append(_)
-                            if isinstance(_, (list, tuple, set, dict)):
-                                a = a + extract(_, isinstance(_, dict))
-                    return a
                 return extract(data,True)
             else:
                 try:

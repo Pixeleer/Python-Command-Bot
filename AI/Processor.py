@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
 
 import COMMUNICATION,FRAMEWORK as _FRAMEWORK,UpdateData
@@ -5,7 +6,9 @@ import json,os,math as _math,time
 from random import randint,choice
 
 
-botaudio, personal, adding = False,False,False
+botaudio, custom_library, adding = False,False,False
+
+extract = _FRAMEWORK.extract
 
 allowed_context = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y',
                    'z','_',"'",'"'
@@ -27,11 +30,11 @@ math_keywords = {
 
 convert_keywords = {'dir_pow_flex': ['squared','tripled','quadrupled','turkied']}
 data_keywords = {
-    'dir_return': ['get',"what's",'what is','who is','what are','what does'],
+    'dir_return': ['get',"what's",'what is','who is','what are','what does','define', 'what is the'],
     'pas_return': ['can i have','can you tell me'],
-    'enter_PS': ['personal setting', 'personal settings','enter personal setting', 'open personal setting', 'enter personal', 'open personal'],
-    'leave_setting': ['exit','leave setting','exit setting'],
-    'add_INFO': ['learn','acknowledge']
+    'enter_CL': ['custom', 'custom library','enter custom library', 'open custom library', 'enter custom', 'open custom'],
+    'leave_CL': ['exit', 'leave','leave library','exit library', 'leave custom', 'exit custom'],
+    'add_to_CL': ['learn','acknowledge', 'add']
 }
 custom_variables = {}
 def group(collection):
@@ -61,7 +64,7 @@ def ContextV4(string):
         foundAt = string.find(keyword,curIndex)
         while foundAt != -1 and foundAt not in ignore:
             # Duplicate case 1
-            if keyword == '*' and string[foundAt+1] == '*':
+            if foundAt+1 < len(string) and (keyword == '*' and string[foundAt+1] == '*'):
                 break
             ignore += range(foundAt, len(keyword))
             delimat.append(foundAt)
@@ -86,7 +89,7 @@ def ContextV4(string):
         else:
             toReturn.append(text) 
 
-    return toReturn
+    return toReturn if toReturn != [] else None
 
 
 def numify(num):
@@ -232,50 +235,47 @@ def math(e,WON):
             COMMUNICATION.FORMAT.to_error(f'Unable to bring {a} to the power of {b}', botaudio)
             
 
-def personal_processing(text,user):
+def custom_processing(context,user):
     global botaudio
     UpdateData.all()
-    global nickname
-    nickname = _FRAMEWORK.DATA.get(f"{user}.personal.nickname")
-    text = text.lower()
-    with open(DATABASE,'r') as r_database:
-        data = json.load(r_database)
-        for Label,Value in data[user]['personal'].items():
-            try:
-                result = text.find(Label)
-                if result != -1:
-                    def extract(collection, isdict=False):
-                        a = list()
-                        if isdict:
-                            for key, _ in collection.items():
-                                if isinstance(_, (int, str)):
-                                    a.append(_)
-                                elif isinstance(_, (list, tuple, set, dict)):
-                                    a = a + extract(_, isinstance(_, dict))
-                        else:
-                            for _ in collection:
-                                if isinstance(_, (int, str)):
-                                    a.append(_)
-                                if isinstance(_, (list, tuple, set, dict)):
-                                    a = a + extract(_, isinstance(_, dict))
-                        return a
 
-                    if isinstance(Value, dict):
-                        x = extract(Value, isinstance(Value, dict))
-                        COMMUNICATION.FORMAT.to_group(f"{x} {nickname}",out=botaudio)
-                    elif isinstance(Value,list):
-                        x = COMMUNICATION.FORMAT.to_group(Value, rtn=True,alone=True)
-                        COMMUNICATION.FORMAT.normal(f"{x} {nickname}",out=botaudio)
-                    else:
-                        COMMUNICATION.FORMAT.normal(f"{Value} {nickname}",out=botaudio)
-                    return None
-            except:
-                pass
-        COMMUNICATION.FORMAT.normal(f"I don't know {text}", out=botaudio)
+    '''Use of nicknames has been discontinued'''
+    #global nickname
+    #nickname = _FRAMEWORK.DATA.get(f"{user}.-custom-libray.nickname")
+
+    if context[0] in data_keywords['dir_return']+data_keywords['pas_return']:
+        context.pop(0)
+
+    text = ' '.join(context)
+    lib = _FRAMEWORK.DATA.get(request=f'{user}.-custom-library')
+    if lib:
+        find = lib.get(text,None)
+        if not find:
+            # Find first closest match
+            for k,v in lib.items():
+                find = k.find(text)
+                if find != -1:
+                    find = v
+                    break
+                else:
+                    find = None
+
+        if find:
+            if isinstance(find, dict):
+                X = extract(find, isinstance(find, dict))
+                COMMUNICATION.FORMAT.to_group(f"{X}",out=botaudio)
+            elif isinstance(find,list):
+                X = COMMUNICATION.FORMAT.to_group(find, rtn=True,alone=True)
+                COMMUNICATION.FORMAT.normal(f"{X}",out=botaudio)
+            else:
+                COMMUNICATION.FORMAT.normal(f"{find}",out=botaudio)
+            return None
+        else:
+             COMMUNICATION.FORMAT.normal(f"{text}, is not found in this library", out=botaudio)
 
 
 def process(text,user, allowBotAudio=False):
-    global botaudio,personal,adding
+    global botaudio,custom_library,adding
     botaudio = allowBotAudio
     if text.lower() in ['shutdown','shut down']:
         return 'shutdown'
@@ -298,19 +298,25 @@ def process(text,user, allowBotAudio=False):
     context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
     # print(context) FOR DEBUG
     if context is None:
-        COMMUNICATION.FORMAT.to_error(f"There was an error comprehending some of your words I'm afraid", botaudio)
+        COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
         return
-    
-    
-    if personal:
-        for index,_ in enumerate(context):
-            if _.lower() in data_keywords['leave_setting']:
-                personal = False
-                COMMUNICATION.FORMAT.normal(f"Leaving personal setting", botaudio)
-                return None #Finished
-            elif _.lower() in data_keywords['enter_PS']:
-                adding = True
 
+    # won abbreviates 'Working On Number'
+    WON = None
+    #WOKW = None
+
+    for index,_ in enumerate(context):
+
+
+        lowered = _.lower() #Implement this new change#
+
+        # Use Custom Library?
+        if custom_library:
+            if lowered in data_keywords['leave_CL']:
+                custom_library = False
+                COMMUNICATION.FORMAT.normal(f"Returning to default library", botaudio)
+                return None #Finished
+            elif lowered in data_keywords['add_to_CL']:
                 '''i = index
                 while i < len(context):
                     if context[i] not in ['is', 'equals']:
@@ -318,40 +324,48 @@ def process(text,user, allowBotAudio=False):
                     else:
                         break'''
 
-                # Label_Anser divider
-                assign_syntax = None
+
+                # Label_Anser divide
+                assign_syntax = -1
+                j_context = ' '.join(context)
                 try:
-                    # Exception raises if 'is' or 'equals' is not found
-                    assign_syntax = context.index('is'),context.index('equals')
+                    for case in ['is','equals','=','is equal to','is = to', 'is =']:
+                        assign_syntax = case if j_context.find(case) != -1 else -1
+                        if assign_syntax != -1:
+                            break
 
-                    Label = " ".join(context[index + 1:assign_syntax])
-                    Value = " ".join(context[assign_syntax+1:])     # Possible out-of-range exepction
+                    assert assign_syntax != -1
 
+                    as_i = context.index(assign_syntax)
+
+                    Label = " ".join(context[index + 1:as_i])
+                    Value = " ".join(context[as_i+1:])     # Possible out-of-range exepction
+
+                    Value = custom_variables.get(Value,Value)   # Attempt to use Custom variable, else value
                     '''while i < len(context):
                         Value += context[i]
                         i += 1'''
                     
                     if Label != '' and Value != '':
-                        _FRAMEWORK.DATA.add_data(f'{user}.personal', {Label: Value})
-                        COMMUNICATION.FORMAT.normal(f"Information learned", botaudio)
+                        _FRAMEWORK.DATA.add_data(f'{user}.-custom-library', {Label: Value})
+                        COMMUNICATION.FORMAT.normal(f"Given information has been learned", botaudio)
                 except:
                     COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
-                    break
-        if not adding:
-            personal_processing(text,user)
-        adding = False
-        return None  # Finished
-
-    # won abbreviates 'Working On Number'
-    WON = None
-    #WOKW = None
-    for index,_ in enumerate(context):
 
 
-        lowered = _.lower() #Implement this new change#
+
+                # TODO
+                '''if context in del_INFO
+                    _FRAMEWORK.DATA.get(f'{user}.-custom-library.{request}')
+                '''
+            else:
+                custom_processing(context,user)
+
+            return  # Quick fix to engage custom library only once       (Solution?)
+
 
         ##  IsMath?
-        if lowered in _math_keywords:
+        elif lowered in _math_keywords:
             
             if index+1 < len(context):  # 2 OPERANDS BASE CASE
                 if index-1 >= 0 and (isNum(context[index-1]) or WON):   #(dir)
@@ -417,13 +431,29 @@ def process(text,user, allowBotAudio=False):
 
 
         elif lowered in data_keywords['dir_return']:    # Returning Data Queries
-            if context[index+1].lower() == 'my':
+            UpdateData.all()
+            if not (index+1 < len(context)):
+                return
+
+            request = None
+            if index+2 < len(context) and context[index+1] == 'my':
                 request = context[index+2]
+            else:
+                request = context[index+1]
+
+            request = request.replace('_',' ')  # for linking multiple worded requests
+            
+            if request.lower() in ['name','username']:
+                COMMUNICATION.FORMAT.normal(f'You are {user}',botaudio)
+                return
 
 
-                if request.lower() in ['name','username']:
-                    COMMUNICATION.FORMAT.normal(f'You are {user}',botaudio)
-                elif request.lower() == 'password':
+            keys = _FRAMEWORK.DATA.get(f'{user}').keys()
+
+            if request.lower() in keys:
+                value = _FRAMEWORK.DATA.get(f'{user}.{request}')
+
+                if request.lower() == 'password':
                     COMMUNICATION.FORMAT.to_special(f'That data is locked',botaudio)
                 else:
                     result = _FRAMEWORK.DATA.get(f'{user}.{request}')
@@ -443,14 +473,14 @@ def process(text,user, allowBotAudio=False):
                     else:
                         COMMUNICATION.FORMAT.to_error(f"Seems I don't have that information. Sorry!",botaudio)
 
-            elif context[index+1].lower() == 'your':
-                request = context[index + 2]
+            elif index+2 < len(context) and context[index+1] in ['your', 'AI']:
+                request = context[index+2]
                 try:
                     info = _FRAMEWORK.DATA.get(f'AI.{request}')
                     COMMUNICATION.FORMAT.normal(info,botaudio)
                 except:
                     COMMUNICATION.FORMAT.normal(f'That information is not found in my database',botaudio)
-            elif lowered in ['what is','what does']:
+            else:
                 try:
                     if context[index+2] not in _math_keywords:
                         try:
@@ -460,12 +490,14 @@ def process(text,user, allowBotAudio=False):
                         except:
                             pass
                 except:
-                    try:
-                        request = context[index + 1]
-                        x = custom_variables[request]
-                        COMMUNICATION.FORMAT.to_answer(x, botaudio)
-                    except:
-                        pass
+                    pass
+
+                try:
+                    request = context[index + 1]
+                    x = custom_variables[request]
+                    COMMUNICATION.FORMAT.to_answer(x, botaudio)
+                except:
+                    pass
 
         elif lowered == 'say':
             try:
@@ -473,7 +505,7 @@ def process(text,user, allowBotAudio=False):
             except:
                 pass
 
-        elif lowered in data_keywords['enter_PS']:
-            if not personal:
-                personal = True
-                COMMUNICATION.FORMAT.normal(f"I am now linked to your personal setting",botaudio)
+        elif lowered in data_keywords['enter_CL']:
+            custom_library = True
+            COMMUNICATION.FORMAT.normal("I am now linked to your custom library",botaudio)
+            return
