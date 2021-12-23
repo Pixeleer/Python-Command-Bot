@@ -1,10 +1,11 @@
-DATABASE,AIAUDIO = 'DATABASE.json','Sarah.mp3'
+DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
 
 import COMMUNICATION,FRAMEWORK as _FRAMEWORK,UpdateData
 import json,os,math as _math,time
 from random import randint,choice
 
-audible = False
+
+botaudio, personal, adding = False,False,False
 
 allowed_context = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y',
                    'z','_',"'",'"'
@@ -136,7 +137,7 @@ def round(num):
             elif conv == 'turkied':
                 return round(a**5)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Could not bring {a} to power',audible)'''
+            COMMUNICATION.FORMAT.to_error(f'Could not bring {a} to power',botaudio)'''
 
 def math(e,WON):
     # Unpack mathematical info
@@ -156,7 +157,7 @@ def math(e,WON):
             try:
                 return a+b
             except:
-                COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}',audible)
+                COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}',botaudio)
     elif op in math_keywords['pas_add']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
         try:
@@ -176,7 +177,7 @@ def math(e,WON):
             else:
                 return round(a-b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', botaudio)
     elif op in math_keywords['pas_sub']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
@@ -187,7 +188,7 @@ def math(e,WON):
             else:
                 return round(a-b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}',audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}',botaudio)
     
     elif op in math_keywords['dir_mult']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
@@ -197,7 +198,7 @@ def math(e,WON):
             a,b = numify(a), numify(b)
             return round(a*b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', botaudio)
     elif op in math_keywords['pas_mult']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
@@ -205,7 +206,7 @@ def math(e,WON):
             a,b = numify(a), numify(b)
             return round(a*b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', botaudio)
 
     elif op in math_keywords['dir_div']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
@@ -213,14 +214,14 @@ def math(e,WON):
         try:
             return round(numify(a)/numify(b))
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', botaudio)
     elif op in math_keywords['pas_div']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
 
         try:
             return round(numify(a)/numify(b))
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', botaudio)
 
     elif op in math_keywords['dir_pow']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
@@ -228,9 +229,11 @@ def math(e,WON):
         try:
             return round(numify(a)**numify(b))
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to bring {a} to the power of {b}', audible)
+            COMMUNICATION.FORMAT.to_error(f'Unable to bring {a} to the power of {b}', botaudio)
+            
 
-def learner_processing(text,user):
+def personal_processing(text,user):
+    global botaudio
     UpdateData.all()
     global nickname
     nickname = _FRAMEWORK.DATA.get(f"{user}.personal.nickname")
@@ -259,21 +262,21 @@ def learner_processing(text,user):
 
                     if isinstance(Value, dict):
                         x = extract(Value, isinstance(Value, dict))
-                        COMMUNICATION.FORMAT.to_group(f"{x} {nickname}",out=audible)
+                        COMMUNICATION.FORMAT.to_group(f"{x} {nickname}",out=botaudio)
                     elif isinstance(Value,list):
                         x = COMMUNICATION.FORMAT.to_group(Value, rtn=True,alone=True)
-                        COMMUNICATION.FORMAT.normal(f"{x} {nickname}",out=audible)
+                        COMMUNICATION.FORMAT.normal(f"{x} {nickname}",out=botaudio)
                     else:
-                        COMMUNICATION.FORMAT.normal(f"{Value} {nickname}",out=audible)
+                        COMMUNICATION.FORMAT.normal(f"{Value} {nickname}",out=botaudio)
                     return None
             except:
-                __excuse__ = None
-        COMMUNICATION.FORMAT.normal(f"I don't know {text}", out=audible)
+                pass
+        COMMUNICATION.FORMAT.normal(f"I don't know {text}", out=botaudio)
 
 
-personal,adding = False,False
-def process(text,user, isAudible=False):
-    audible = isAudible # global varaiable 
+def process(text,user, allowBotAudio=False):
+    global botaudio,personal,adding
+    botaudio = allowBotAudio
     if text.lower() in ['shutdown','shut down']:
         return 'shutdown'
     elif text.lower() in ['switch output, switch bot audio']:
@@ -281,23 +284,21 @@ def process(text,user, isAudible=False):
     elif text.lower() in ['switch input']:
         return 'switch input'
     elif text.lower() in ['repeat that','repeat','can you repeat that','could you repeat that','please repeat that']:
-        os.system(AIAUDIO)
+        os.system(AIAUDIOFILE)
         return
     elif text.lower() in ['sarah','sara']:
         a = ['Yes?','Uh huh?','Mm?','What?','Need something?','Hmm?',f'Yes {user}?']
-        COMMUNICATION.FORMAT.normal(choice(a),audible)
+        COMMUNICATION.FORMAT.normal(choice(a),botaudio)
         return
     elif text.lower() in ['hey','hi','hello','howdy']:
         a = ['Hey!','Hi!','Hello!','Howdy!','Salutations!',f'Hi {user}!']
-        COMMUNICATION.FORMAT.normal(choice(a),audible)
+        COMMUNICATION.FORMAT.normal(choice(a),botaudio)
         return
-    global personal,adding
-
 
     context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
     # print(context) FOR DEBUG
     if context is None:
-        COMMUNICATION.FORMAT.to_error(f"There was an error comprehending some of your words I'm afraid", audible)
+        COMMUNICATION.FORMAT.to_error(f"There was an error comprehending some of your words I'm afraid", botaudio)
         return
     
     
@@ -305,31 +306,39 @@ def process(text,user, isAudible=False):
         for index,_ in enumerate(context):
             if _.lower() in data_keywords['leave_setting']:
                 personal = False
-                COMMUNICATION.FORMAT.normal(f"Leaving personal setting", audible)
+                COMMUNICATION.FORMAT.normal(f"Leaving personal setting", botaudio)
                 return None #Finished
             elif _.lower() in data_keywords['enter_PS']:
                 adding = True
-                if _.lower() == 'done':
-                    adding = False
-                    break
-                i = index
+
+                '''i = index
                 while i < len(context):
                     if context[i] not in ['is', 'equals']:
                         i += 1
                     else:
-                        break
+                        break'''
 
-                Label = " ".join(context[index + 1:i])
-                i += 1
-                Value = ""
-                while i < len(context):
-                    Value += f'{context[i]} '
-                    i += 1
-                if Label and Value != "":
-                    _FRAMEWORK.DATA.add_data(f'{user}.personal', {Label: Value})
-                    COMMUNICATION.FORMAT.normal(f"Information learned", audible)
+                # Label_Anser divider
+                assign_syntax = None
+                try:
+                    # Exception raises if 'is' or 'equals' is not found
+                    assign_syntax = context.index('is'),context.index('equals')
+
+                    Label = " ".join(context[index + 1:assign_syntax])
+                    Value = " ".join(context[assign_syntax+1:])     # Possible out-of-range exepction
+
+                    '''while i < len(context):
+                        Value += context[i]
+                        i += 1'''
+                    
+                    if Label != '' and Value != '':
+                        _FRAMEWORK.DATA.add_data(f'{user}.personal', {Label: Value})
+                        COMMUNICATION.FORMAT.normal(f"Information learned", botaudio)
+                except:
+                    COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
+                    break
         if not adding:
-            learner_processing(text,user)
+            personal_processing(text,user)
         adding = False
         return None  # Finished
 
@@ -353,7 +362,7 @@ def process(text,user, isAudible=False):
                         WON = result if index+2 < len(context) and context[index+2] in _math_keywords else None
                         if not WON:
                             result = 'negative '+str(result)[1:] if isNum(result) and numify(result) < 0 else result
-                            COMMUNICATION.FORMAT.to_answer(result, audible)
+                            COMMUNICATION.FORMAT.to_answer(result, botaudio)
 
                 elif index+3 < len(context):    #(passive)
                     e = context[index:index+4]  # op a div b
@@ -362,7 +371,7 @@ def process(text,user, isAudible=False):
                         WON = result if index+4 < len(context) and context[index+4] in _math_keywords else None
                         if not WON:
                             result = 'negative '+str(result)[1:] if isNum(result) and numify(result) < 0 else result
-                            COMMUNICATION.FORMAT.to_answer(result, audible)
+                            COMMUNICATION.FORMAT.to_answer(result, botaudio)
 
             ## IsConversion?
             '''elif lowered in _convert_keywords:
@@ -385,9 +394,9 @@ def process(text,user, isAudible=False):
                         if not WON:
                             # if result is negative, output is 'negative <result>'
                             result = 'negative '+str(result)[1:] if numify(result) and result < 0 else result
-                            COMMUNICATION.FORMAT.to_answer(result, audible)
+                            COMMUNICATION.FORMAT.to_answer(result, botaudio)
                     else:
-                        COMMUNICATION.FORMAT.to_error('Faulty formula', audible) '''
+                        COMMUNICATION.FORMAT.to_error('Faulty formula', botaudio) '''
 
 
         elif lowered in ['=','equals','equal','is']:          # Variable Assignment
@@ -400,7 +409,7 @@ def process(text,user, isAudible=False):
             elif value in custom_variables:
                 custom_variables[f'{value}'] = variable
             else:
-                COMMUNICATION.FORMAT.to_error(f'Cannot assign {variable} to {value}',audible)
+                COMMUNICATION.FORMAT.to_error(f'Cannot assign {variable} to {value}',botaudio)
 
             '''Although we are successfully assigning variables.
                Usage such as x = x+x or a^2 + b^2 = c^2 is faulty'''
@@ -413,9 +422,9 @@ def process(text,user, isAudible=False):
 
 
                 if request.lower() in ['name','username']:
-                    COMMUNICATION.FORMAT.normal(f'You are {user}',audible)
+                    COMMUNICATION.FORMAT.normal(f'You are {user}',botaudio)
                 elif request.lower() == 'password':
-                    COMMUNICATION.FORMAT.to_special(f'That data is locked',audible)
+                    COMMUNICATION.FORMAT.to_special(f'That data is locked',botaudio)
                 else:
                     result = _FRAMEWORK.DATA.get(f'{user}.{request}')
                     if result is not None:
@@ -424,47 +433,47 @@ def process(text,user, isAudible=False):
                             x = request_char.index('_')
                             request_char[x] = ' '
                         except:
-                            __excuse__ = None
+                            pass
                         c_request = ''.join(request_char)
 
                         if isinstance(result,(list,tuple,set)):
-                            COMMUNICATION.FORMAT.normal(f'Your {c_request} are {COMMUNICATION.FORMAT.to_group(result, rtn=True, alone=True)}',audible)
+                            COMMUNICATION.FORMAT.normal(f'Your {c_request} are {COMMUNICATION.FORMAT.to_group(result, rtn=True, alone=True)}',botaudio)
                         else:
-                            COMMUNICATION.FORMAT.normal(f'Your {c_request} is {result}',audible)
+                            COMMUNICATION.FORMAT.normal(f'Your {c_request} is {result}',botaudio)
                     else:
-                        COMMUNICATION.FORMAT.to_error(f"Seems I don't have that information. Sorry!",audible)
+                        COMMUNICATION.FORMAT.to_error(f"Seems I don't have that information. Sorry!",botaudio)
 
             elif context[index+1].lower() == 'your':
                 request = context[index + 2]
                 try:
                     info = _FRAMEWORK.DATA.get(f'AI.{request}')
-                    COMMUNICATION.FORMAT.normal(info,audible)
+                    COMMUNICATION.FORMAT.normal(info,botaudio)
                 except:
-                    COMMUNICATION.FORMAT.normal(f'That information is not found in my database',audible)
+                    COMMUNICATION.FORMAT.normal(f'That information is not found in my database',botaudio)
             elif lowered in ['what is','what does']:
                 try:
                     if context[index+2] not in _math_keywords:
                         try:
                             request = context[index + 1]
                             x = custom_variables[request]
-                            COMMUNICATION.FORMAT.to_answer(x,audible)
+                            COMMUNICATION.FORMAT.to_answer(x,botaudio)
                         except:
-                            __excuse__ = None
+                            pass
                 except:
                     try:
                         request = context[index + 1]
                         x = custom_variables[request]
-                        COMMUNICATION.FORMAT.to_answer(x, audible)
+                        COMMUNICATION.FORMAT.to_answer(x, botaudio)
                     except:
-                        __excuse__ = None
+                        pass
 
         elif lowered == 'say':
             try:
-                COMMUNICATION.FORMAT.normal(" ".join(context[index+1:]), audible)
+                COMMUNICATION.FORMAT.normal(" ".join(context[index+1:]), botaudio)
             except:
-                __excuse__ = None
+                pass
 
         elif lowered in data_keywords['enter_PS']:
             if not personal:
                 personal = True
-                COMMUNICATION.FORMAT.normal(f"I am now linked to your personal setting",audible)
+                COMMUNICATION.FORMAT.normal(f"I am now linked to your personal setting",botaudio)
