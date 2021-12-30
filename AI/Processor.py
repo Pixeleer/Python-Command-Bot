@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
 
-import COMMUNICATION,FRAMEWORK as _FRAMEWORK,UpdateData
+import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData
 import json,os,math as _math,time
 from random import randint,choice
+
+
 
 
 botaudio, custom_library, adding = False,False,False
@@ -30,7 +32,7 @@ math_keywords = {
 
 convert_keywords = {'dir_pow_flex': ['squared','tripled','quadrupled','turkied']}
 data_keywords = {
-    'dir_return': ['get',"what's",'what is','who is','what are','what does','define', 'what is the'],
+    'dir_return': ['get',"what's",'what is','who is','what are','what does','define', 'what is the','is it'],
     'pas_return': ['can i have','can you tell me'],
     'enter_CL': ['custom', 'custom library','enter custom library', 'open custom library', 'enter custom', 'open custom'],
     'leave_CL': ['exit', 'leave','leave library','exit library', 'leave custom', 'exit custom'],
@@ -114,7 +116,7 @@ def isNum(num):
     except:
         return False 
 
-def round(num):
+def tryInt(num):
     num = custom_variables.get(num) or num
     if isNum(num) and int(num) == num:
         return int(num)
@@ -142,97 +144,118 @@ def round(num):
         except:
             COMMUNICATION.FORMAT.to_error(f'Could not bring {a} to power',botaudio)'''
 
+
+'''
+PEMDAS HAS NOT YET BEEN IMPLEMENTED!!
+'''
 def math(e,WON):
     # Unpack mathematical info
+    global a,op,div,b
     a,op,div,b = None,None,None,None
     if len(e) == 3:     # Direct equation
         a,op,b = e
     elif len(e) == 4:   # Passive equation
         op,a,div,b = e
 
+    def checkAnB():
+        return isNum(a),isNum(b)
+
     if op in math_keywords['dir_add']:
         # Set a to WON|look for custom_variable a|use a, Look for custom_variable b|use b
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
 
         try:
-            return round(numify(a)+numify(b))
+            assert checkAnB()
+            return tryInt(a+b)
         except:
-            try:
-                return a+b
-            except:
-                COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}',botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}', out=botaudio)
+
     elif op in math_keywords['pas_add']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
+
         try:
-            return round(numify(a)+numify(b))
+            assert checkAnB()
+            return tryInt(a+b)
         except:
-            try:
-                return a+b
-            except:
-                COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}', True)
+            COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}', out=botaudio)
 
     elif op in math_keywords['dir_sub']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
+
         try:
-            a,b = numify(a), numify(b)
+            assert checkAnB()
             if div == 'taken from':
-                return round(b-a)
+                return tryInt(b-a)
             else:
-                return round(a-b)
+                return tryInt(a-b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', out=botaudio)
+
     elif op in math_keywords['pas_sub']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
 
         try:
             a,b = numify(a),numify(b)
+            assert checkAnB()
             if div == 'from':
-                return round(b-a)
+                return tryInt(b-a)
             else:
-                return round(a-b)
+                return tryInt(a-b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}',botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', out=botaudio)
     
     elif op in math_keywords['dir_mult']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        custom_variables.get(b)
+        a,b = numify(a), numify(b)
 
         try:
-            a,b = numify(a), numify(b)
-            return round(a*b)
+            assert checkAnB()
+            return tryInt(a*b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', out=botaudio)
+
     elif op in math_keywords['pas_mult']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
 
         try:
-            a,b = numify(a), numify(b)
-            return round(a*b)
+            assert checkAnB()
+            return tryInt(a*b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', out=botaudio)
 
     elif op in math_keywords['dir_div']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
 
         try:
-            return round(numify(a)/numify(b))
+            assert checkAnB()
+            return tryInt(a/b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', out=botaudio)
     elif op in math_keywords['pas_div']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
 
         try:
-            return round(numify(a)/numify(b))
+            assert checkAnB()
+            return tryInt(a/b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', out=botaudio)
 
     elif op in math_keywords['dir_pow']:
         a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
+        a,b = numify(a), numify(b)
 
         try:
-            return round(numify(a)**numify(b))
+            assert checkAnB()
+            return tryInt(a**b)
         except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to bring {a} to the power of {b}', botaudio)
+            COMMUNICATION.FORMAT.to_error(f'Unable to bring {a} to the power of {b}', out=botaudio)
             
 
 def custom_processing(context,user):
@@ -279,7 +302,7 @@ def process(text,user, allowBotAudio=False):
     botaudio = allowBotAudio
     if text.lower() in ['shutdown','shut down']:
         return 'shutdown'
-    elif text.lower() in ['switch output, switch bot audio']:
+    elif text.lower() in ['switch output','switch bot audio']:
         return 'switch output'
     elif text.lower() in ['switch input']:
         return 'switch input'
@@ -296,7 +319,7 @@ def process(text,user, allowBotAudio=False):
         return
 
     context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
-    # print(context) FOR DEBUG
+    #print(context) #FOR DEBUG
     if context is None:
         COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
         return
@@ -346,6 +369,7 @@ def process(text,user, allowBotAudio=False):
                         Value += context[i]
                         i += 1'''
                     
+                    print(Value)
                     if Label != '' and Value != '':
                         _FRAMEWORK.DATA.add_data(f'{user}.-custom-library', {Label: Value})
                         COMMUNICATION.FORMAT.normal(f"Given information has been learned", botaudio)
@@ -371,7 +395,7 @@ def process(text,user, allowBotAudio=False):
                 if index-1 >= 0 and (isNum(context[index-1]) or WON):   #(dir)
                     e = context[index-1:index+2]    # a op 
                     result = math(e,WON)
-                    if result:
+                    if result or result == 0:
                         # if index+2 is in range, chech if context at index+2 is a math_keyword
                         WON = result if index+2 < len(context) and context[index+2] in _math_keywords else None
                         if not WON:
@@ -381,7 +405,7 @@ def process(text,user, allowBotAudio=False):
                 elif index+3 < len(context):    #(passive)
                     e = context[index:index+4]  # op a div b
                     result = math(e,WON)
-                    if result:
+                    if result or result == 0:
                         WON = result if index+4 < len(context) and context[index+4] in _math_keywords else None
                         if not WON:
                             result = 'negative '+str(result)[1:] if isNum(result) and numify(result) < 0 else result
@@ -467,9 +491,15 @@ def process(text,user, allowBotAudio=False):
                         c_request = ''.join(request_char)
 
                         if isinstance(result,(list,tuple,set)):
-                            COMMUNICATION.FORMAT.normal(f'Your {c_request} are {COMMUNICATION.FORMAT.to_group(result, rtn=True, alone=True)}',botaudio)
+                            output = "{}".format(f'Your {c_request} are ' if context[index+1].lower() == 'my' else f'{c_request} are ')
+                            COMMUNICATION.FORMAT.normal(
+                                output + COMMUNICATION.FORMAT.to_group(result, rtn=True, alone=True),
+                                botaudio)
+                            pass
                         else:
-                            COMMUNICATION.FORMAT.normal(f'Your {c_request} is {result}',botaudio)
+                            #output = "{}".format(f'Your {a} is ' if a%2 == 0 else 0)
+                            output = "{}".format(f'Your {c_request} is ' if context[index+1].lower() == 'my' else f'{c_request} is ') + result
+                            COMMUNICATION.FORMAT.normal(output,botaudio)
                     else:
                         COMMUNICATION.FORMAT.to_error(f"Seems I don't have that information. Sorry!",botaudio)
 

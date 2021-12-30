@@ -54,11 +54,12 @@ class DATA:
             else:
                 try:
                     path = DATA.convert_topath(request)
+
                     path_cpy = path.copy()
                     requested_data = data
                     while len(path_cpy) > 0:
-                        requested_data = requested_data[path_cpy[0]]
-                        path_cpy.pop(0)
+                        requested_data = requested_data[path_cpy.pop(0)]
+
                     return requested_data
                 except:
                     return None
@@ -206,6 +207,3 @@ class DATA:
         if clear:
             # To do
             pass
-
-
-

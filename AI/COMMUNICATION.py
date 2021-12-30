@@ -15,8 +15,8 @@ answer_types = {
 ]
 }
 
-greeting_types=['Why hello','How may I be of service']
-goodbye_types=['See ya later', 'Bye now', 'Adios', 'Farewell']
+greeting_types=['Hello','How may I be of service','Hi']
+goodbye_types=['See you later', 'Bye now', 'Adios', 'Farewell']
 
 
 from MODULES.gtts import gTTS
@@ -39,11 +39,10 @@ def thenaudio(t):
 from random import randint
 def random_selection(collection,super=False):
     if isinstance(collection, list):
-        if super:
-            return random_selection(collection[randint(0,len(collection)-1)],True)
-        else:
-            return collection[randint(0,len(collection)-1)]
+        # IDEK it just does super? random selection and doesnt bug so all is well
+        return random_selection(collection[randint(0,len(collection)-1)],True) if super else collection[randint(0,len(collection)-1)]
     elif isinstance(collection,dict):
+        # same here
         if super:
             c = [v for i, v in collection.items()]
             return random_selection(c[randint(0,len(c)-1)],True)
@@ -154,18 +153,17 @@ class FORMAT:
 
     @staticmethod
     def to_group(collection,out=False, rtn=False,alone=False):
+
+        collection = [str(el) for el in collection]
+
         b, e = '| ', ' |'
         b, e = '', ''
         limit = 10
 
-        global text
-        text = ', '.join([str(_) for i, _ in enumerate(collection) if i < limit - 1])
+        text = ', '.join(collection[:limit if limit < len(collection) else None])
+
         if len(collection) > limit:
-            text += f' and ({len(collection) - limit} more)'
-        else:
-            collection[-1] = 'and ' + str(collection[-1])
-            text = ', '.join([str(_) for i, _ in enumerate(collection) if i < limit])
-            text += '.'
+            text += f' and {len(collection) - limit} more items'
 
         if out and not alone:
             thenaudio("".join([b,text,e]))
@@ -181,6 +179,3 @@ class FORMAT:
                 return text
             else:
                 print(text)
-
-
-

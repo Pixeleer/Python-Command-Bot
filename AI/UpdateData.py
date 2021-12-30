@@ -74,7 +74,7 @@ def compinfo():
     ct,cp = current_thread().name,current_process().name
     _FRAMEWORK.DATA.edit_directory(f'{USER}.thread',new_value=f"{ct}")
     _FRAMEWORK.DATA.edit_directory(f'{USER}.process', new_value=f"{cp}")
-    _FRAMEWORK.DATA.edit_directory(f'{USER}.system flags', new_value=f"{sys.flags}")
+    _FRAMEWORK.DATA.edit_directory(f'{USER}.system flags', new_value=f"{(sys.flags)}".split(','))
 
 
 # Discontinued
