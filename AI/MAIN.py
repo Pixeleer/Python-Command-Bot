@@ -33,7 +33,7 @@ def startup():
         return user_name
 
 
-    COMMUNICATION.FORMAT.normal(f'Hello {user_name}! As a new user, I am required to have a password for your account.', out=botaudio)
+    COMMUNICATION.FORMAT.normal(f'Hi {user_name}, it is nice to meet you! As a new user, I am required to have a password for your account.', out=botaudio)
     print(f'Hello {user_name}!\nAs a new user, I am required to have a password for your account.\n')
     
     # NO PASSWORD CHECKER (lazy)
@@ -90,10 +90,10 @@ while __on__:
         elif run == 'switch input':
             if srcheck():
                 input_type = 'audible'
-                COMMUNICATION.FORMAT.normal(f"Input switched to microphone")
+                COMMUNICATION.FORMAT.normal(f"Input switched to microphone", out=botaudio)
         elif run == 'switch output':
             botaudio = not botaudio
-            COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}')
+            COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}', out=botaudio)
 
     #For microphone
     elif srcheck() and input_type == 'audible':
@@ -104,7 +104,9 @@ while __on__:
             audio = r.listen(source)
 
         try:
-            run = Processor.process(r.recognize_google(audio),USER, botaudio)
+            text = r.recognize_google(audio)
+            COMMUNICATION.FORMAT.normal(f'{text}?', out=botaudio)
+            run = Processor.process(text,USER, botaudio)
             if run == 'shutdown':
                 break
             elif run == 'switch input':
@@ -114,7 +116,7 @@ while __on__:
                 botaudio = not botaudio
                 COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}')
 
-        except sr.UnknownValueError:
+        except sr.UnknownValueError as e:
             pass
         except sr.RequestError as e:
             pass

@@ -2,13 +2,14 @@
 DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
 
 import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData
+import GROUPING
 import json,os,math as _math,time
 from random import randint,choice
 
 
 
 
-botaudio, custom_library, adding = False,False,False
+botaudio, custom_library, grouping = False,False,False
 
 extract = _FRAMEWORK.extract
 
@@ -19,6 +20,7 @@ special_characters = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+'
                       ':','|', ',', '<', '.', '>', '/', '?'
 ]
 math_keywords = {
+    'grouping': ['(', ')'],
     'dir_add': ['plus','+','combined with','joined with'],
     'pas_add': ['add','combine','join', 'sum of'],
     'dir_sub' : ['minus','-','taken from'],
@@ -29,6 +31,8 @@ math_keywords = {
     'pas_div': ['quotient of'],
     'dir_pow': ['^', '**','to the power of','to the'],
 }
+
+
 
 convert_keywords = {'dir_pow_flex': ['squared','tripled','quadrupled','turkied']}
 data_keywords = {
@@ -143,119 +147,6 @@ def tryInt(num):
                 return round(a**5)
         except:
             COMMUNICATION.FORMAT.to_error(f'Could not bring {a} to power',botaudio)'''
-
-
-'''
-PEMDAS HAS NOT YET BEEN IMPLEMENTED!!
-'''
-def math(e,WON):
-    # Unpack mathematical info
-    global a,op,div,b
-    a,op,div,b = None,None,None,None
-    if len(e) == 3:     # Direct equation
-        a,op,b = e
-    elif len(e) == 4:   # Passive equation
-        op,a,div,b = e
-
-    def checkAnB():
-        return isNum(a),isNum(b)
-
-    if op in math_keywords['dir_add']:
-        # Set a to WON|look for custom_variable a|use a, Look for custom_variable b|use b
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            return tryInt(a+b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}', out=botaudio)
-
-    elif op in math_keywords['pas_add']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            return tryInt(a+b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to add {a} and {b}', out=botaudio)
-
-    elif op in math_keywords['dir_sub']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            if div == 'taken from':
-                return tryInt(b-a)
-            else:
-                return tryInt(a-b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', out=botaudio)
-
-    elif op in math_keywords['pas_sub']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            a,b = numify(a),numify(b)
-            assert checkAnB()
-            if div == 'from':
-                return tryInt(b-a)
-            else:
-                return tryInt(a-b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to subtract {a} and {b}', out=botaudio)
-    
-    elif op in math_keywords['dir_mult']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            return tryInt(a*b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', out=botaudio)
-
-    elif op in math_keywords['pas_mult']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            return tryInt(a*b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to multiply {a} and {b}', out=botaudio)
-
-    elif op in math_keywords['dir_div']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            return tryInt(a/b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', out=botaudio)
-    elif op in math_keywords['pas_div']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            return tryInt(a/b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to divide {a} and {b}', out=botaudio)
-
-    elif op in math_keywords['dir_pow']:
-        a,b = WON or custom_variables.get(a,a), custom_variables.get(b,b)
-        a,b = numify(a), numify(b)
-
-        try:
-            assert checkAnB()
-            return tryInt(a**b)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Unable to bring {a} to the power of {b}', out=botaudio)
             
 
 def custom_processing(context,user):
@@ -296,8 +187,39 @@ def custom_processing(context,user):
         else:
              COMMUNICATION.FORMAT.normal(f"{text}, is not found in this library", out=botaudio)
 
+def toBinaryOp(eq=[]):
+    for i in range(len(eq)):
+        _ = eq[i]
+        if _ in math_keywords['dir_add']:
+            eq[i] = '+'
+        elif _ in math_keywords['pas_add']:
+            eq[i+2] = '+'
+            eq[i] = None
+        elif _ in math_keywords['dir_sub']:
+            eq[i] = '-'
+        elif _ in math_keywords['pas_sub']:
+            eq[i+2] = '-'
+            eq[i] = None
+        elif _ in math_keywords['dir_mult']:
+            eq[i] = '*'
+        elif _ in math_keywords['pas_mult']:
+            eq[i+2] = '*'
+            eq[i] = None
+        elif _ in math_keywords['dir_div']:
+            eq[i] = '/'
+        elif _ in math_keywords['pas_div']:
+            eq[i+2] = '/'
+            eq[i] = None
+        elif _ in math_keywords['dir_pow']:
+            eq[i] = '^'
 
-def process(text,user, allowBotAudio=False):
+    while None in eq:
+        eq.remove(None)
+
+    return eq
+
+
+def process(text,user, allowBotAudio=False,):
     global botaudio,custom_library,adding
     botaudio = allowBotAudio
     if text.lower() in ['shutdown','shut down']:
@@ -318,20 +240,26 @@ def process(text,user, allowBotAudio=False):
         COMMUNICATION.FORMAT.normal(choice(a),botaudio)
         return
 
-    context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
+
+    context = text if grouping else ContextV4(text) # List of characters split and grouped into keywords, words or numbers
     #print(context) #FOR DEBUG
     if context is None:
         COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
         return
 
+
+    # MATH GROUPING GOES HERE
+    
+    context_w_equations = GROUPING.getEquations(context, _math_keywords, custom_variables)
+    
+
     # won abbreviates 'Working On Number'
     WON = None
     #WOKW = None
 
-    for index,_ in enumerate(context):
 
-
-        lowered = _.lower() #Implement this new change#
+    for index,_ in enumerate(context_w_equations):
+        lowered = _.lower() if type(_) is str else '' #Implement this new change#
 
         # Use Custom Library?
         if custom_library:
@@ -389,54 +317,37 @@ def process(text,user, allowBotAudio=False):
 
 
         ##  IsMath?
-        elif lowered in _math_keywords:
-            
-            if index+1 < len(context):  # 2 OPERANDS BASE CASE
-                if index-1 >= 0 and (isNum(context[index-1]) or WON):   #(dir)
-                    e = context[index-1:index+2]    # a op 
-                    result = math(e,WON)
-                    if result or result == 0:
-                        # if index+2 is in range, chech if context at index+2 is a math_keyword
-                        WON = result if index+2 < len(context) and context[index+2] in _math_keywords else None
-                        if not WON:
-                            result = 'negative '+str(result)[1:] if isNum(result) and numify(result) < 0 else result
-                            COMMUNICATION.FORMAT.to_answer(result, botaudio)
-
-                elif index+3 < len(context):    #(passive)
-                    e = context[index:index+4]  # op a div b
-                    result = math(e,WON)
-                    if result or result == 0:
-                        WON = result if index+4 < len(context) and context[index+4] in _math_keywords else None
-                        if not WON:
-                            result = 'negative '+str(result)[1:] if isNum(result) and numify(result) < 0 else result
-                            COMMUNICATION.FORMAT.to_answer(result, botaudio)
+        elif type(_) is list:
+            groups = GROUPING.GROUP(_)
+            for i in range(len(groups)):
+                groups[i] = toBinaryOp(groups[i])
+            result = GROUPING.dotheting(groups)
+            COMMUNICATION.FORMAT.to_answer(result, botaudio)
 
             ## IsConversion?
-            '''elif lowered in _convert_keywords:
-                if index-1 or WOKW >= 0:   # inderect?
-                    e = context[index-1:index+1]    # a,op
-                    result = conversion(e,WON or WOKW)
-                    if result:
-                        # if index+2 is in range, chech if context at index+2 is a math_keyword
-                        if index+1 < len(context):
-                            nextkw = context[index+1]
-                            if nextkw in _convert_keywords: # if next keyword is a conversion
-                                WOKW  = result 
-                            elif (numify(result) and nextkw in _math_keywords): # if result is a number and next keyword is mathematical
-                                WON = result
-                            else:
-                                WON = None
-                        else:
-                            WON = None
+        # '''elif lowered in _convert_keywords:
+        #     if index-1 or WOKW >= 0:   # inderect?
+        #         e = context[index-1:index+1]    # a,op
+        #         result = conversion(e,WON or WOKW)
+        #         if result:
+        #             # if index+2 is in range, chech if context at index+2 is a math_keyword
+        #             if index+1 < len(context):
+        #                 nextkw = context[index+1]
+        #                 if nextkw in _convert_keywords: # if next keyword is a conversion
+        #                     WOKW  = result 
+        #                 elif (numify(result) and nextkw in _math_keywords): # if result is a number and next keyword is mathematical
+        #                     WON = result
+        #                 else:
+        #                     WON = None
+        #             else:
+        #                 WON = None
 
-                        if not WON:
-                            # if result is negative, output is 'negative <result>'
-                            result = 'negative '+str(result)[1:] if numify(result) and result < 0 else result
-                            COMMUNICATION.FORMAT.to_answer(result, botaudio)
-                    else:
-                        COMMUNICATION.FORMAT.to_error('Faulty formula', botaudio) '''
-
-
+        #             if not WON:
+        #                 # if result is negative, output is 'negative <result>'
+        #                 result = 'negative '+str(result)[1:] if numify(result) and result < 0 else result
+        #                 COMMUNICATION.FORMAT.to_answer(result, botaudio)
+        #         else:
+        #             COMMUNICATION.FORMAT.to_error('Faulty formula', botaudio) '''
         elif lowered in ['=','equals','equal','is']:          # Variable Assignment
             variable,value = context[index-1],context[index+1]
             if not variable.isnumeric():
@@ -451,9 +362,6 @@ def process(text,user, allowBotAudio=False):
 
             '''Although we are successfully assigning variables.
                Usage such as x = x+x or a^2 + b^2 = c^2 is faulty'''
-
-
-
         elif lowered in data_keywords['dir_return']:    # Returning Data Queries
             UpdateData.all()
             if not (index+1 < len(context)):
@@ -539,3 +447,13 @@ def process(text,user, allowBotAudio=False):
             custom_library = True
             COMMUNICATION.FORMAT.normal("I am now linked to your custom library",botaudio)
             return
+
+
+# test_equations = [
+#     '(2^3)'
+#     #'( 17 - (6 / 2) ) + 4 * 3',
+# ]
+
+# for eq in test_equations:
+
+#     process(eq,'user',False)
