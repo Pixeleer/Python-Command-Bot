@@ -1,11 +1,19 @@
 #!/usr/bin/python3
 DATABASE = 'DATABASE.JSON'
 
-import FRAMEWORK as _FRAMEWORK
+
+if __name__ == '__main__':
+    import FRAMEWORK as _FRAMEWORK
+else:
+    import internal.FRAMEWORK as _FRAMEWORK
+
+
 from datetime import datetime
 from random import randint
 import os,sys,math
 from threading import *; from multiprocessing import *
+
+
 USER = None
 
 def updatetime():

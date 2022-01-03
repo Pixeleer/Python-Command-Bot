@@ -2,7 +2,11 @@
 import os
 DATABASE = 'DATABASE.JSON'
 
-import COMMUNICATION
+if __name__ == '__main__':
+    import COMMUNICATION
+else:
+    from internal import COMMUNICATION
+
 import json
 
 def extract(collection, isdict=False):

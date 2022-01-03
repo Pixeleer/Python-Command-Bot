@@ -1,11 +1,15 @@
 #!/usr/bin/python3
-DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
 
-import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData
-import GROUPING
+if __name__ != '__main__':
+    from internal import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData, GROUPING
+else:
+    import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData
+    import GROUPING
+
 import json,os,math as _math,time
 from random import randint,choice
 
+DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
 
 
 
@@ -21,6 +25,7 @@ special_characters = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+'
 ]
 math_keywords = {
     'grouping': ['(', ')'],
+    'assignment': ['=','equals','equal'],
     'dir_add': ['plus','+','combined with','joined with'],
     'pas_add': ['add','combine','join', 'sum of'],
     'dir_sub' : ['minus','-','taken from'],
@@ -91,9 +96,12 @@ def ContextV4(string):
             # array.remove(text) no need
             continue
         elif text not in KEYWORDS:
-            toReturn += text.split()
+            toReturn += text.split()    #split normal words by white space
         else:
-            toReturn.append(text) 
+            toReturn.append(text)
+
+    # Get equations fix
+    toReturn = GROUPING.getEquations(context=toReturn, math_keywords=math_keywords, variables=custom_variables, ignore=_data_keywords)
 
     return toReturn if toReturn != [] else None
 
@@ -101,10 +109,7 @@ def ContextV4(string):
 def numify(num):
     num = custom_variables.get(num,num)
     try:
-        try:
-            return int(num)
-        except:
-            return float(num)
+        return float(num)
     except:
         return num
 
@@ -212,12 +217,13 @@ def toBinaryOp(eq=[]):
             eq[i] = None
         elif _ in math_keywords['dir_pow']:
             eq[i] = '^'
+        elif _ in math_keywords['assignment']:
+            eq[i] = '='
 
     while None in eq:
         eq.remove(None)
 
     return eq
-
 
 def process(text,user, allowBotAudio=False,):
     global botaudio,custom_library,adding
@@ -240,25 +246,15 @@ def process(text,user, allowBotAudio=False,):
         COMMUNICATION.FORMAT.normal(choice(a),botaudio)
         return
 
-
-    context = text if grouping else ContextV4(text) # List of characters split and grouped into keywords, words or numbers
+    context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
     #print(context) #FOR DEBUG
+
     if context is None:
         COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
         return
-
-
-    # MATH GROUPING GOES HERE
-    
-    context_w_equations = GROUPING.getEquations(context, _math_keywords, custom_variables)
     
 
-    # won abbreviates 'Working On Number'
-    WON = None
-    #WOKW = None
-
-
-    for index,_ in enumerate(context_w_equations):
+    for index,_ in enumerate(context):
         lowered = _.lower() if type(_) is str else '' #Implement this new change#
 
         # Use Custom Library?
@@ -297,7 +293,6 @@ def process(text,user, allowBotAudio=False,):
                         Value += context[i]
                         i += 1'''
                     
-                    print(Value)
                     if Label != '' and Value != '':
                         _FRAMEWORK.DATA.add_data(f'{user}.-custom-library', {Label: Value})
                         COMMUNICATION.FORMAT.normal(f"Given information has been learned", botaudio)
@@ -318,66 +313,52 @@ def process(text,user, allowBotAudio=False,):
 
         ##  IsMath?
         elif type(_) is list:
+            _ = toBinaryOp(_)
+
+            assign_to = _[0] if '=' in _ else None
+            _ = _[2:] if assign_to is not None else _
+
+
             groups = GROUPING.GROUP(_)
-            for i in range(len(groups)):
-                groups[i] = toBinaryOp(groups[i])
-            result = GROUPING.dotheting(groups)
-            COMMUNICATION.FORMAT.to_answer(result, botaudio)
+            '''for i in range(len(groups)):
+                groups[i] = toBinaryOp(groups[i])'''
+            result = tryInt(GROUPING.solve(groups))
+            if assign_to:   # equation variable assignment
+                result = result or _[-1]    # ... or simple 1:1 assignment
+                custom_variables[assign_to] = result
 
-            ## IsConversion?
-        # '''elif lowered in _convert_keywords:
-        #     if index-1 or WOKW >= 0:   # inderect?
-        #         e = context[index-1:index+1]    # a,op
-        #         result = conversion(e,WON or WOKW)
-        #         if result:
-        #             # if index+2 is in range, chech if context at index+2 is a math_keyword
-        #             if index+1 < len(context):
-        #                 nextkw = context[index+1]
-        #                 if nextkw in _convert_keywords: # if next keyword is a conversion
-        #                     WOKW  = result 
-        #                 elif (numify(result) and nextkw in _math_keywords): # if result is a number and next keyword is mathematical
-        #                     WON = result
-        #                 else:
-        #                     WON = None
-        #             else:
-        #                 WON = None
-
-        #             if not WON:
-        #                 # if result is negative, output is 'negative <result>'
-        #                 result = 'negative '+str(result)[1:] if numify(result) and result < 0 else result
-        #                 COMMUNICATION.FORMAT.to_answer(result, botaudio)
-        #         else:
-        #             COMMUNICATION.FORMAT.to_error('Faulty formula', botaudio) '''
-        elif lowered in ['=','equals','equal','is']:          # Variable Assignment
-            variable,value = context[index-1],context[index+1]
-            if not variable.isnumeric():
-                if value in custom_variables and not value.isnumeric():
-                    custom_variables.update({f'{variable}': custom_variables[f'{value}']})
-                else:
-                    custom_variables.update({f'{variable}': value})
-            elif value in custom_variables:
-                custom_variables[f'{value}'] = variable
+                COMMUNICATION.FORMAT.normal(f'I have assigned {assign_to} to {result}', botaudio)
+            
+            elif result is not None: 
+                COMMUNICATION.FORMAT.to_answer(result, botaudio)
             else:
-                COMMUNICATION.FORMAT.to_error(f'Cannot assign {variable} to {value}',botaudio)
+                COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
 
-            '''Although we are successfully assigning variables.
-               Usage such as x = x+x or a^2 + b^2 = c^2 is faulty'''
         elif lowered in data_keywords['dir_return']:    # Returning Data Queries
             UpdateData.all()
             if not (index+1 < len(context)):
                 return
 
             request = None
-            if index+2 < len(context) and context[index+1] == 'my':
+            if index+2 < len(context) and context[index+1] in ['the','my']:
                 request = context[index+2]
             else:
                 request = context[index+1]
+
+            if type(request) is not str:
+                if isinstance(request, (int,float)):
+                    COMMUNICATION.FORMAT.normal(request,botaudio)
+
+                continue
+            elif type(request) is str and request in custom_variables:
+                COMMUNICATION.FORMAT.normal(custom_variables.get(request),botaudio)
+                continue
 
             request = request.replace('_',' ')  # for linking multiple worded requests
             
             if request.lower() in ['name','username']:
                 COMMUNICATION.FORMAT.normal(f'You are {user}',botaudio)
-                return
+                continue
 
 
             keys = _FRAMEWORK.DATA.get(f'{user}').keys()
@@ -390,13 +371,8 @@ def process(text,user, allowBotAudio=False,):
                 else:
                     result = _FRAMEWORK.DATA.get(f'{user}.{request}')
                     if result is not None:
-                        request_char = list(request)
-                        try:
-                            x = request_char.index('_')
-                            request_char[x] = ' '
-                        except:
-                            pass
-                        c_request = ''.join(request_char)
+                        c_request = request.split('_')
+                        c_request = ' '.join(c_request)
 
                         if isinstance(result,(list,tuple,set)):
                             output = "{}".format(f'Your {c_request} are ' if context[index+1].lower() == 'my' else f'{c_request} are ')
@@ -418,24 +394,6 @@ def process(text,user, allowBotAudio=False,):
                     COMMUNICATION.FORMAT.normal(info,botaudio)
                 except:
                     COMMUNICATION.FORMAT.normal(f'That information is not found in my database',botaudio)
-            else:
-                try:
-                    if context[index+2] not in _math_keywords:
-                        try:
-                            request = context[index + 1]
-                            x = custom_variables[request]
-                            COMMUNICATION.FORMAT.to_answer(x,botaudio)
-                        except:
-                            pass
-                except:
-                    pass
-
-                try:
-                    request = context[index + 1]
-                    x = custom_variables[request]
-                    COMMUNICATION.FORMAT.to_answer(x, botaudio)
-                except:
-                    pass
 
         elif lowered == 'say':
             try:
@@ -450,7 +408,7 @@ def process(text,user, allowBotAudio=False,):
 
 
 # test_equations = [
-#     '(2^3)'
+#     '-1 + 2'
 #     #'( 17 - (6 / 2) ) + 4 * 3',
 # ]
 

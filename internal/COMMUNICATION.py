@@ -19,8 +19,13 @@ greeting_types=['Hello','How may I be of service','Hi']
 goodbye_types=['See you later', 'Bye now', 'Adios', 'Farewell']
 
 
-from MODULES.gtts import gTTS
-from MODULES.mutagen.mp3 import MP3
+if __name__ != '__main__':
+    from internal.MODULES.gtts import gTTS
+    from internal.MODULES.mutagen.mp3 import MP3
+else:
+    # Wont support google Text-To-Speech or Mutgan.Mp3 for scripts
+    gTTS = None
+    MP3 = None
 
 def thenaudio(t):
     # Defaulted to english Version 1.0.0

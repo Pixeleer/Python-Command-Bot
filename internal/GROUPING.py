@@ -11,14 +11,6 @@
 '''
 
 
-# Take in input (already in context)
-# Group all parenthesed context
-
-
-
-# def = define (function)
-
-
 def GROUP(context):
     equation_queue = list()
     stack = list()
@@ -64,6 +56,12 @@ def FIT(original, subs):
             new.append(original[i])
 
     return new if new != original else subs
+
+def numify(num):
+    try:
+        return float(num)
+    except:
+        return num
 
 def PEMDAS(eq=None):
     eq = eq or []
@@ -115,6 +113,7 @@ def PEMDAS(eq=None):
     create a placeholder list that repr the place for the awaiting result to go
     '''
 
+
     res = None
     x = None
 
@@ -123,20 +122,24 @@ def PEMDAS(eq=None):
 
     for _ in operands:
         a,b = _
-
         a = results.pop() if results != [] and a in used else eq[a]
         b = results.pop() if results != [] and b in used else eq[b]
+
+        a,b = numify(a),numify(b)
+        if not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
+            return 'err'
+
         used += _
 
         op = operators.pop(0)
     
-        res = calc(int(a), op,int(b))
+        res = calc(a, op,b)
         results.append(res)
    
     return res
 
 
-def dotheting(group):
+def solve(group):
     results = list()
 
     for i in range(len(group)):
@@ -145,6 +148,9 @@ def dotheting(group):
         # use that index as a position for the res in the next group
         context = group[i]
         res = PEMDAS(context)
+        if res == 'err':
+            return None
+
         if i+1 < len(group):
             results.append(res)
             rev = list(reversed(results))
@@ -153,49 +159,67 @@ def dotheting(group):
             
 
         else:
-            return res or results[-1]
+            return res or (results[-1] if results != [] else None)
 
 
 
-def getEquations(context, math_keywords=list(), variables=dict()): # <LIST>, <DICTIONARY>
+def getEquations(context, math_keywords=list(), variables=dict(), ignore=list()): # <LIST>, <DICTIONARY>, <LIST>
     new = list()
-
-    hasOP = False
     
-    ops = ('(',')','^', '*', '/', '+', '-')
-
+    ops = ('=','(',')','^', '*', '/', '+', '-')
+    signed = False
     eq = list()
+
+    def checkEq():
+        hasOp = sum([_ in ops for _ in eq]) != 0
+        ofLength = len(eq) >= 3
+        return hasOp and ofLength
+
+    assignment = ['=','equals','is equal to']
 
     for i in range(len(context)):
         ch = context[i]
-        if not (ch.isdigit() or ch in ops or ch in math_keywords or ch in variables.keys()):
+        var = False     # acts as variable?
+        if i+1 < len(context) and context[i+1] in assignment:
+            var = True
+        else:
+            var = False
+            ch = ch if i > 0 and context[i-1] in ignore and context[i+1 if  i+ 1< len(context) else i] not in ops else variables.get(ch,ch)
+            ch = str(ch)
+
+        if signed and ch.isdigit():
+            eq[-1] += ch
+            continue
+
+
+        if not (isinstance(numify(ch), (int,float)) or ch in ops or ch in math_keywords or ch in variables.keys() or var) or ch in ignore:
             # Not an operand or operator
             # check if eq was built
-            hasOP = sum([_ in ops for _ in eq]) != 0 # check if eq has op characters
-            if eq != [] and hasOP:
+            if checkEq():
                 new.insert(len(new),eq)
-
             elif eq != []:
                 new += eq   # add accidental characters
 
             eq = list()
-            hasOP = False
 
             new.append(ch)
+            signed = False
             # append this ch to new context
         else:
-            ch = variables.get(ch,ch)
-            # append eq ch to eq
+            # append eq ch to eq or signed_num
             eq.append(ch)
+            signed = False
 
+            if eq[0] in ops and not (i > 0 and context[i-1].isdigit()):
+                signed = True
 
-    hasOP = sum([_ in ops for _ in eq]) != 0 # check if left over eq has op characters
-    if hasOP:
+    check = checkEq()
+    if check and eq[0] in ops and not signed:    # signed number
+        new += [''.join(eq)]
+        
+    elif check:        
         new.insert(len(new),eq)
     else:
         new += eq
 
-
-
     return new
-
