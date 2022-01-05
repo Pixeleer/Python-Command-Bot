@@ -24,9 +24,10 @@ def startup():
     if user: # TYPE: DICT
         COMMUNICATION.FORMAT.normal('Please enter your password', out=botaudio)
         pwd = input(f'Please enter your password -> ')
+
         while pwd != user['password']:
             COMMUNICATION.FORMAT.normal('Error, Incorrect Password! Please try again', out=botaudio)
-            print('Error, Incorrect Password! Please try again -> ')
+            print('\nError, Incorrect Password! Please try again -> ')
 
             COMMUNICATION.FORMAT.normal('Please enter your password', out=botaudio)
             pwd = input(f'Please enter your password -> ')
@@ -46,7 +47,7 @@ def startup():
 
     while new_pwd != confirm_pwd:
         COMMUNICATION.FORMAT.normal('ERROR. Your entries did not match! Please try again', out=botaudio)
-        print('ERROR! Your entries did not match! Please try again')
+        print('\nERROR! Your entries did not match! Please try again')
 
         COMMUNICATION.FORMAT.normal('Please type a safe password to be linked with your account', out=botaudio)
         new_pwd = input(f'Please type a safe password to be linked with your account -> ')
@@ -62,15 +63,15 @@ def startup():
         _FRAMEWORK.DATA.add_data(p=f'{user_name}', new_data={preset_data:''})
 
     COMMUNICATION.FORMAT.normal('Thank you! Your account is now setup and ready', out=botaudio)
-    print('\nThank you! Your account is now setup and ready')
+    print('\nThank you! Your account is now setup and ready\n')
     return user_name
 
 
 USER = startup()  # USER is just user's user_name
 UpdateData.USER = USER
-
+print()
 greet = COMMUNICATION.random_selection(COMMUNICATION.greeting_types, super=True)
-COMMUNICATION.FORMAT.to_special(f'{greet} {USER}!', botaudio)
+COMMUNICATION.FORMAT.to_special(f'{greet}, {USER}!', botaudio)
 
 def srcheck():
     try:
@@ -80,11 +81,13 @@ def srcheck():
         warnings.warn('Speech Recognition Module not enabled/installed')
         return False
 
-
+value_error = False
+r = sr.Recognizer()
 while __on__:
+    print()   # So each run output is seperated
     #For typing
     if input_type == 'typed':
-        run = Processor.process(input(), USER, botaudio)
+        run = Processor.process(input('-> '), USER, botaudio)
         if run == 'shutdown':
             break
         elif run == 'switch input':
@@ -93,34 +96,37 @@ while __on__:
                 COMMUNICATION.FORMAT.normal(f"Input switched to microphone", out=botaudio)
         elif run == 'switch output':
             botaudio = not botaudio
-            COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}', out=botaudio)
+            COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}', out=False)
 
     #For microphone
     elif srcheck() and input_type == 'audible':
-        r = sr.Recognizer()
-
-        with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source,duration=0.5)
-            audio = r.listen(source)
-
         try:
-            text = r.recognize_google(audio)
-            COMMUNICATION.FORMAT.normal(f'{text}?', out=botaudio)
-            run = Processor.process(text,USER, botaudio)
-            if run == 'shutdown':
-                break
-            elif run == 'switch input':
-                input_type = 'typed'
-                COMMUNICATION.FORMAT.normal(f"Input switched to typed", out=botaudio)
-            elif run == 'switch output':
-                botaudio = not botaudio
-                COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}', out=botaudio)
+            print(r'Listening ~', end='')
+            with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source)
+                audio = r.listen(source)
 
+                print(r'')
+                text = r.recognize_google(audio)
+                COMMUNICATION.FORMAT.normal(f'{text}?', out=botaudio)
+                run = Processor.process(text,USER, botaudio)
+                if run == 'shutdown':
+                    break
+                elif run == 'switch input':
+                    input_type = 'typed'
+                    COMMUNICATION.FORMAT.normal(f"Input switched to typed", out=botaudio)
+                elif run == 'switch output':
+                    botaudio = not botaudio
+                    COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}', out=False)
+
+                value_error = False
         except sr.UnknownValueError as e:
-            COMMUNICATION.FORMAT.normal(f'Sorry, I don\'t understand', out=botaudio)
+            if not value_error:
+                COMMUNICATION.FORMAT.normal(f'Sorry, I don\'t understand', out=botaudio)
+                value_error = True
         except sr.RequestError as e:
             pass
 
 
 goodbye = COMMUNICATION.random_selection(COMMUNICATION.goodbye_types, super=True)
-COMMUNICATION.FORMAT.to_special(f'{goodbye} {USER}!', out=botaudio)
+COMMUNICATION.FORMAT.to_special(f'{goodbye}, {USER}!', out=botaudio)

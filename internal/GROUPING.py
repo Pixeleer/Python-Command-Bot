@@ -63,8 +63,14 @@ def numify(num):
     except:
         return num
 
-def PEMDAS(eq=None):
-    eq = eq or []
+def isNum(num):
+    return isinstance(numify(num), (int,float))
+
+def PEMDAS(eq=[]):
+    if len(eq) == 1:
+        return eq[0]
+    elif len(eq) < 3:
+        return 'err'
 
     operators = []
     operands = []
@@ -126,7 +132,7 @@ def PEMDAS(eq=None):
         b = results.pop() if results != [] and b in used else eq[b]
 
         a,b = numify(a),numify(b)
-        if not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
+        if not (isNum(a) and isNum(b)):
             return 'err'
 
         used += _
@@ -178,13 +184,15 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
     assignment = ['=','equals','is equal to']
 
     for i in range(len(context)):
+        left = context[i-1] if i > 0 else None
+        right = context[i+1] if i+1 < len(context) else None
         ch = context[i]
         var = False     # acts as variable?
         if i+1 < len(context) and context[i+1] in assignment:
             var = True
         else:
             var = False
-            ch = ch if i > 0 and context[i-1] in ignore and context[i+1 if  i+ 1< len(context) else i] not in ops else variables.get(ch,ch)
+            ch = ch if left in ignore and (right not in ops and not isNum(right))  else variables.get(ch,ch)
             ch = str(ch)
 
         if signed and ch.isdigit():
@@ -192,7 +200,7 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
             continue
 
 
-        if not (isinstance(numify(ch), (int,float)) or ch in ops or ch in math_keywords or ch in variables.keys() or var) or ch in ignore:
+        if not (isNum(ch) or ch in ops or ch in math_keywords or ch in variables.keys() or var) or ch in ignore:
             # Not an operand or operator
             # check if eq was built
             if checkEq():
@@ -206,11 +214,25 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
             signed = False
             # append this ch to new context
         else:
-            # append eq ch to eq or signed_num
+
+            '''First solution for shorthand '''
+            pre = variables.get(left,')' if left == ')' else None)
+            post = variables.get(right,'(' if right == '(' else None)
+
+            # if pre ch is ')' or numeric | if post ch is '(' or numeric
+            pre,post = pre == ')' or isNum(pre), post == '(' or isNum(post)
+
+            if pre and (eq != [] and eq[-1] != '*') and ch not in ops:  # shorthand * with what comes before ch
+                eq.append('*')
+ 
             eq.append(ch)
+
+            if post and ch not in ops:  # shorthand * with what comes after ch
+                eq.append('*')
+
             signed = False
 
-            if eq[0] in ops and not (i > 0 and context[i-1].isdigit()):
+            if eq[0] in ('+','-') and not (i > 0 and left.isdigit()):   # Signed number
                 signed = True
 
     check = checkEq()

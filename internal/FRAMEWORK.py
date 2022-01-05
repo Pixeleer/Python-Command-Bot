@@ -28,22 +28,6 @@ def extract(collection, isdict=False):
 class DATA:
     @staticmethod
     def convert_topath(collection):
-        def dots_toindex():
-            a = list()
-            for i, _ in enumerate(collection):
-                if _ == '.':
-                    a.append(i)
-            return a
-
-        def get_directories(seperators):
-            collection_cpy = str(collection)
-            a = list()
-            for _ in seperators:
-                directory = collection_cpy[:collection_cpy.find('.')]
-                collection_cpy = collection_cpy[collection_cpy.find('.') + 1:]
-                a.append(directory)
-            a.append(collection_cpy)
-            return a
         return collection.split('.')
         #return get_directories(dots_toindex())
 
@@ -135,7 +119,7 @@ class DATA:
             return f'No data given!'
 
     @staticmethod
-    def remove_data(p,requested_data):
+    def remove_data(p,specific_data=None):
         with open(DATABASE,'r') as r_database:
             data = json.load(r_database)
 
@@ -147,37 +131,37 @@ class DATA:
                 area = area[path_cpy[0]]
                 path_cpy.pop(0)
 
-            section = path_cpy[0]
+            section = path_cpy[-1]
 
             try:
                 area[section]
             except:
-                COMMUNICATION.FORMAT.to_special(f'{section} not found',True)
-                return
+                return f'{section} not found'
 
             if area[section] is None:
-                COMMUNICATION.FORMAT.to_special(f'No Data in {section}',True)
-                return
+                return f'No Data in {section}'
 
-            if isinstance(area[section], list):
+            if specific_data and isinstance(area.get(section,None), list):
                 try:
-                    area[section].remove(requested_data)
+                    area[section].remove(specific_data)
                     if len(area[section]) == 0:
                         area[section] = None
                 except:
-                    COMMUNICATION.FORMAT.to_special(f'{requested_data} not found',True)
-            elif isinstance(area[section], dict):
+                    return f'{specific_data} not found in {section}'
+
+            elif specific_data and  isinstance(area.get(section,None), dict):
                 try:
-                    area[section].pop(requested_data)
+                    area[section].pop(specific_data)
                     if len(area[section]) == 0:
                         area[section] = None
                 except:
-                    COMMUNICATION.FORMAT.to_special(f'{requested_data} not found',True)
+                    return f'{specific_data} not found in {section}'
             else:
                 try:
-                    area[section] = None
+                    area.pop(section)
                 except:
-                    COMMUNICATION.FORMAT.to_special(f'{section} not found',True)
+                    return f'{section} not found'
+
             with open(DATABASE,'w') as w_database:
                 json.dump(data,w_database,indent=4)
 

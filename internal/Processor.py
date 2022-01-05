@@ -10,6 +10,7 @@ import json,os,math as _math,time
 from random import randint,choice
 
 DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
+USER = None
 
 
 
@@ -45,7 +46,8 @@ data_keywords = {
     'pas_return': ['can i have','can you tell me'],
     'enter_CL': ['custom', 'custom library','enter custom library', 'open custom library', 'enter custom', 'open custom'],
     'leave_CL': ['exit', 'leave','leave library','exit library', 'leave custom', 'exit custom'],
-    'add_to_CL': ['learn','acknowledge', 'add']
+    'add_to_CL': ['learn','acknowledge', 'add'],
+    'del_from_CL': ['delete', 'del', 'remove']
 }
 custom_variables = {}
 def group(collection):
@@ -62,6 +64,7 @@ _math_keywords,_data_keywords = group(math_keywords),group(data_keywords)#,group
                                        #v
 KEYWORDS = _math_keywords+_data_keywords
 
+
 def ContextV4(string):
     array = list(string)
     toReturn = list()
@@ -69,19 +72,24 @@ def ContextV4(string):
     delim = 'OEBOFXO'
     delimat = list()
     curIndex = 0
-    ignore = list()
+    ignore = set()
 
-    for keyword in KEYWORDS:
+    userlib = _FRAMEWORK.DATA.get(request=USER)
+    for keyword in KEYWORDS+list(userlib.keys())+list(custom_variables.keys()):    # KEEP THIS ORDER (KEYWORDS,userlib.keys(),custom_variables.keys())
         foundAt = string.find(keyword,curIndex)
+
         while foundAt != -1 and foundAt not in ignore:
             # Duplicate case 1
             if foundAt+1 < len(string) and (keyword == '*' and string[foundAt+1] == '*'):
                 break
-            ignore += range(foundAt, len(keyword))
+
+
+            ignore.update(range(foundAt, foundAt+len(keyword)))
             delimat.append(foundAt)
             delimat.append(foundAt+len(keyword))
             curIndex = foundAt+1
             foundAt = string.find(keyword,curIndex)
+
 
         curIndex = 0
 
@@ -91,6 +99,7 @@ def ContextV4(string):
         
     # join array and split by delims
     array = ''.join(array).split(delim)
+
     for i,text in enumerate(array):
         if text == '':
             # array.remove(text) no need
@@ -98,10 +107,12 @@ def ContextV4(string):
         elif text not in KEYWORDS:
             toReturn += text.split()    #split normal words by white space
         else:
+            if text[0] == ' ':
+                text = text[1:]
             toReturn.append(text)
 
-    # Get equations fix
-    toReturn = GROUPING.getEquations(context=toReturn, math_keywords=math_keywords, variables=custom_variables, ignore=_data_keywords)
+    # Get equations fix                                                                         # process is not custom
+    toReturn = GROUPING.getEquations(toReturn, math_keywords, custom_variables, _data_keywords) if not custom_library else toReturn
 
     return toReturn if toReturn != [] else None
 
@@ -115,18 +126,10 @@ def numify(num):
 
 def isNum(num):
     num = custom_variables.get(num,num)
-    try:
-        try:
-            if int(num):
-                return True
-        except:
-            if float(num):
-                return True
-    except:
-        return False 
+    return isinstance(numify(num), (int,float))
 
 def tryInt(num):
-    num = custom_variables.get(num) or num
+    num = custom_variables.get(num,num)
     if isNum(num) and int(num) == num:
         return int(num)
     else:
@@ -153,44 +156,73 @@ def tryInt(num):
         except:
             COMMUNICATION.FORMAT.to_error(f'Could not bring {a} to power',botaudio)'''
             
-
-def custom_processing(context,user):
+def custom_processing(context, deletion=False):
     global botaudio
+        
+
     UpdateData.all()
 
     '''Use of nicknames has been discontinued'''
     #global nickname
-    #nickname = _FRAMEWORK.DATA.get(f"{user}.-custom-libray.nickname")
+    #nickname = _FRAMEWORK.DATA.get(f"{USER}.-custom-libray.nickname")
 
     if context[0] in data_keywords['dir_return']+data_keywords['pas_return']:
         context.pop(0)
 
     text = ' '.join(context)
-    lib = _FRAMEWORK.DATA.get(request=f'{user}.-custom-library')
+    lib = _FRAMEWORK.DATA.get(request=f'{USER}.-custom-library')
+
+    
     if lib:
-        find = lib.get(text,None)
-        if not find:
+        find = lib.get(text)
+        if find and deletion:
+            find = text # set find to text for later confirmation
+
+        elif not find:
             # Find first closest match
             for k,v in lib.items():
                 find = k.find(text)
                 if find != -1:
-                    find = v
+                    if deletion:
+                        # delete key from library
+                        find = k
+                    else:
+                        find = v    # set find to value
+
                     break
                 else:
                     find = None
 
+        
         if find:
-            if isinstance(find, dict):
+            if deletion:
+                # Should later support mic answers?
+                answer = input(f'Delete {find}? [y/n]  -> ').lower()
+                while answer not in ('y', 'yes', 'n', 'no'):
+                    answer = input(f'Invalid answer\nDelete {find}? [y/n] -> ')
+
+                if answer in ('y','yes'):
+                    res = _FRAMEWORK.DATA.remove_data(p=f'{USER}.-custom-library.{find}')
+  
+                                        # if res is None, succesful removal
+                    COMMUNICATION.FORMAT.normal(res or f"{find}, has been removed from library",out=botaudio)
+
+                else:   # must be n, or no
+                    COMMUNICATION.FORMAT.normal(f"Removal cancelled",out=botaudio)
+
+            elif isinstance(find, dict):
                 X = extract(find, isinstance(find, dict))
                 COMMUNICATION.FORMAT.to_group(f"{X}",out=botaudio)
+
             elif isinstance(find,list):
                 X = COMMUNICATION.FORMAT.to_group(find, rtn=True,alone=True)
                 COMMUNICATION.FORMAT.normal(f"{X}",out=botaudio)
+
             else:
                 COMMUNICATION.FORMAT.normal(f"{find}",out=botaudio)
-            return None
-        else:
-             COMMUNICATION.FORMAT.normal(f"{text}, is not found in this library", out=botaudio)
+
+    if not lib or not find:
+        COMMUNICATION.FORMAT.normal(f"{text}, is not found in this library", out=botaudio)
 
 def toBinaryOp(eq=[]):
     for i in range(len(eq)):
@@ -226,8 +258,10 @@ def toBinaryOp(eq=[]):
     return eq
 
 def process(text,user, allowBotAudio=False,):
-    global botaudio,custom_library,adding
+    global botaudio,custom_library,adding, USER
     botaudio = allowBotAudio
+    USER = user
+
     if text.lower() in ['shutdown','shut down']:
         return 'shutdown'
     elif text.lower() in ['switch output','switch bot audio']:
@@ -238,11 +272,11 @@ def process(text,user, allowBotAudio=False,):
         os.system(AIAUDIOFILE)
         return
     elif text.lower() in ['sarah','sara']:
-        a = ['Yes?','Uh huh?','Mm?','What?','Need something?','Hmm?',f'Yes {user}?']
+        a = ['Yes?','Uh huh?','Mm?','What?','Need something?','Hmm?',f'Yes {USER}?']
         COMMUNICATION.FORMAT.normal(choice(a),botaudio)
         return
     elif text.lower() in ['hey','hi','hello','howdy']:
-        a = ['Hey!','Hi!','Hello!','Howdy!','Salutations!',f'Hi {user}!']
+        a = ['Hey!','Hi!','Hello!','Howdy!','Salutations!',f'Hi {USER}!']
         COMMUNICATION.FORMAT.normal(choice(a),botaudio)
         return
 
@@ -294,19 +328,20 @@ def process(text,user, allowBotAudio=False,):
                         i += 1'''
                     
                     if Label != '' and Value != '':
-                        _FRAMEWORK.DATA.add_data(f'{user}.-custom-library', {Label: Value})
+                        _FRAMEWORK.DATA.add_data(f'{USER}.-custom-library', {Label: Value})
                         COMMUNICATION.FORMAT.normal(f"Given information has been learned", botaudio)
                 except:
                     COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
 
 
-
-                # TODO
-                '''if context in del_INFO
-                    _FRAMEWORK.DATA.get(f'{user}.-custom-library.{request}')
-                '''
+            elif lowered in data_keywords['del_from_CL']:
+                try:
+                    custom_processing(context[index+1:], deletion=True)
+                except:
+                    # Todelete likely not specified
+                    COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
             else:
-                custom_processing(context,user)
+                custom_processing(context)
 
             return  # Quick fix to engage custom library only once       (Solution?)
 
@@ -316,6 +351,12 @@ def process(text,user, allowBotAudio=False,):
             _ = toBinaryOp(_)
 
             assign_to = _[0] if '=' in _ else None
+
+            # check if assign_to is in user data
+            if assign_to and _FRAMEWORK.DATA.get(request=USER).get(assign_to):
+                COMMUNICATION.FORMAT.to_error(f'{assign_to} is locked and cannot be assigned',out=botaudio)
+                continue
+
             _ = _[2:] if assign_to is not None else _
 
 
@@ -327,7 +368,7 @@ def process(text,user, allowBotAudio=False,):
                 result = result or _[-1]    # ... or simple 1:1 assignment
                 custom_variables[assign_to] = result
 
-                COMMUNICATION.FORMAT.normal(f'I have assigned {assign_to} to {result}', botaudio)
+                COMMUNICATION.FORMAT.normal(f'I have assigned {assign_to} to {result}', out=botaudio)
             
             elif result is not None: 
                 COMMUNICATION.FORMAT.to_answer(result, botaudio)
@@ -345,31 +386,36 @@ def process(text,user, allowBotAudio=False,):
             else:
                 request = context[index+1]
 
+            # base case
             if type(request) is not str:
-                if isinstance(request, (int,float)):
-                    COMMUNICATION.FORMAT.normal(request,botaudio)
-
                 continue
-            elif type(request) is str and request in custom_variables:
+
+
+            if request in custom_variables:
                 COMMUNICATION.FORMAT.normal(custom_variables.get(request),botaudio)
+                continue
+
+            # This is preferred to be checked after request in variables condition
+            if isNum(request):
+                COMMUNICATION.FORMAT.normal(request,botaudio)
                 continue
 
             request = request.replace('_',' ')  # for linking multiple worded requests
             
             if request.lower() in ['name','username']:
-                COMMUNICATION.FORMAT.normal(f'You are {user}',botaudio)
+                COMMUNICATION.FORMAT.normal(f'You are {USER}',botaudio)
                 continue
 
 
-            keys = _FRAMEWORK.DATA.get(f'{user}').keys()
+            keys = _FRAMEWORK.DATA.get(f'{USER}').keys()
 
             if request.lower() in keys:
-                value = _FRAMEWORK.DATA.get(f'{user}.{request}')
+                value = _FRAMEWORK.DATA.get(f'{USER}.{request}')
 
                 if request.lower() == 'password':
                     COMMUNICATION.FORMAT.to_special(f'That data is locked',botaudio)
                 else:
-                    result = _FRAMEWORK.DATA.get(f'{user}.{request}')
+                    result = _FRAMEWORK.DATA.get(f'{USER}.{request}')
                     if result is not None:
                         c_request = request.split('_')
                         c_request = ' '.join(c_request)
@@ -381,7 +427,7 @@ def process(text,user, allowBotAudio=False,):
                                 botaudio)
                             pass
                         else:
-                            #output = "{}".format(f'Your {a} is ' if a%2 == 0 else 0)
+
                             output = "{}".format(f'Your {c_request} is ' if context[index+1].lower() == 'my' else f'{c_request} is ') + result
                             COMMUNICATION.FORMAT.normal(output,botaudio)
                     else:

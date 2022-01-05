@@ -16,7 +16,7 @@ answer_types = {
 }
 
 greeting_types=['Hello','How may I be of service','Hi']
-goodbye_types=['See you later', 'Bye now', 'Adios', 'Farewell']
+goodbye_types=['See you later', 'Goodbye for now', 'Adios', 'Farewell']
 
 
 if __name__ != '__main__':
@@ -61,7 +61,7 @@ def random_selection(collection,super=False):
 def greet(name, out=False, rtn=False):
     name = str(name)
     b, e = '~| ', ' |~'
-    b, e = '', ''
+
     output = random_selection(greeting_types)
     if out:
         thenaudio("".join([b, output, name, e]))
@@ -76,7 +76,7 @@ def greet(name, out=False, rtn=False):
 def goodbye(name, out=False, rtn=False):
     text = str(name)
     b, e = '~| ', ' |~'
-    b, e = '', ''
+
     output = random_selection(goodbye_types)
     if out:
         thenaudio("".join([b, output, name, e]))
@@ -92,7 +92,7 @@ class FORMAT:
     def to_special(text, out=False, rtn=False):
         text = str(text)
         b,e = '~| ',' |~'
-        b, e = '', ''
+
         if out:
             thenaudio("".join([b,text,e]))
         else:
@@ -105,7 +105,7 @@ class FORMAT:
     def to_error(text,out=False, rtn=False):
         text = str(text)
         b, e = '!| Error ', " |!"
-        b, e = '', ''
+
         if out:
             thenaudio("".join([b,text,e]))
         else:
@@ -118,7 +118,7 @@ class FORMAT:
     def to_answer(text,out=False, rtn=False):
         text = str(text)
         b, e = '~| ',' |~'
-        b, e = '', ''
+
         a_t = random_selection(answer_types)
         if a_t[0] == 'intro':
             output = random_selection(answer_types['intro'])
@@ -147,7 +147,7 @@ class FORMAT:
     def normal(text,out=False, rtn=False):
         text = str(text)
         b,e = '| ',' |'
-        b, e = '', ''
+
         if out:
             thenaudio("".join([b,text,e]))
         else:
@@ -162,7 +162,7 @@ class FORMAT:
         collection = [str(el) for el in collection]
 
         b, e = '| ', ' |'
-        b, e = '', ''
+
         limit = 10
 
         text = ', '.join(collection[:limit if limit < len(collection) else None])
