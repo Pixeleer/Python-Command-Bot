@@ -433,13 +433,15 @@ def process(text,user, allowBotAudio=False,):
                     else:
                         COMMUNICATION.FORMAT.to_error(f"Seems I don't have that information. Sorry!",botaudio)
 
-            elif index+2 < len(context) and context[index+1] in ['your', 'AI']:
-                request = context[index+2]
+            elif index+2 < len(context) and context[index+1] == 'your':
+                COMMUNICATION.FORMAT.to_special('BOT DATABASE NOT YET IMPLEMENTED',botaudio)
+                # TO BE IMPLEMENTED LATER
+                '''request = context[index+2]
                 try:
                     info = _FRAMEWORK.DATA.get(f'AI.{request}')
                     COMMUNICATION.FORMAT.normal(info,botaudio)
                 except:
-                    COMMUNICATION.FORMAT.normal(f'That information is not found in my database',botaudio)
+                    COMMUNICATION.FORMAT.normal(f'That information is not found in my database',botaudio)'''
 
         elif lowered == 'say':
             try:
