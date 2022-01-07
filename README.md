@@ -1,8 +1,11 @@
-# Python-Command-bot V1
-Python Command bot that can be interacted with verbally and non-verbally
+# Python-Command-Bot V1
 
-Language of Communication: English
-Open-Source: Yes
-Stable: Yes
+
+
+Language of Communication : English
+
+Open-Source : Yes
+
+Latest Release : Stable Pre-Release
 
 help() is to be implemented
