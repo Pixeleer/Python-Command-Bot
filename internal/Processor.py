@@ -6,7 +6,7 @@ else:
     import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData
     import GROUPING
 
-import json,os,math as _math,time
+import os
 from random import randint,choice
 
 DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'

@@ -1,19 +1,3 @@
-'''
-    PROGRAM: PEMDAS ALGORITHM O(1)
-    DATA: 12/29/21
-    ORDER:
-        Parentheses
-        Exponent
-        MULTIPLICATION
-        DIVISION
-        ADDITION
-        SUBTRACTION
-'''
-
-
-from pyaudio import paAL
-
-
 def GROUP(context):
     equation_queue = []
     stack = []

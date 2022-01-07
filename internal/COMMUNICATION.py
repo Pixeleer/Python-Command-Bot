@@ -2,7 +2,7 @@
 DATABASE = 'DATABASE.json'
 AIAUDIO = 'Sarah.mp3'
 
-import os,time,sys,warnings
+import os,time,warnings
 
 
 answer_types = {

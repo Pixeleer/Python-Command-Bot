@@ -7,12 +7,7 @@ except:
         db.write('{}')
 
 from internal import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
-import json,os
 import warnings
-
-# Uncomment this bit out if you have the speech_recognition module installed,
-# errors will occur if module not referenced as sr
-import speech_recognition as sr
 
 
 __on__,input_type,botaudio = True,'typed',False
@@ -75,17 +70,18 @@ COMMUNICATION.FORMAT.to_special(f'{greet}, {USER}!', botaudio)
 
 def srcheck():
     try:
-        import speech_recognition
-        return True
+        import speech_recognition as sr
+        return sr
     except:
         warnings.warn('Speech Recognition Module not enabled/installed')
         return False
 
 value_error = False
 
-check = srcheck()
-r = sr.Recognizer() if check else None
-Microphone = sr.Microphone() if check else None
+sr = srcheck()
+r = sr.Recognizer() if sr else None
+Microphone = sr.Microphone() if sr else None
+check = r and Microphone
 
 while __on__:
     print()   # So each run output is seperated
