@@ -24,17 +24,15 @@ allowed_context = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','
 special_characters = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '-', '=', '[', ']', '{', '}', ';',
                       ':','|', ',', '<', '.', '>', '/', '?'
 ]
+
+# Passive keywords is unsupported till future versions
 math_keywords = {
     'grouping': ['(', ')'],
     'assignment': ['=','equals','equal'],
     'dir_add': ['plus','+','combined with','joined with'],
-    'pas_add': ['add','combine','join', 'sum of'],
     'dir_sub' : ['minus','-','taken from'],
-    'pas_sub': ['subtract','take','negate'],
     'dir_mult': ['times', '*'],
-    'pas_mult': ['product of', 'multiple of'],
     'dir_div': ['divided by', '/', 'over'],
-    'pas_div': ['quotient of'],
     'dir_pow': ['^', '**','to the power of','to the'],
 }
 
@@ -111,8 +109,8 @@ def ContextV4(string):
                 text = text[1:]
             toReturn.append(text)
 
-    # Get equations fix                                                                         # process is not custom
-    toReturn = GROUPING.getEquations(toReturn, math_keywords, custom_variables, _data_keywords) if not custom_library else toReturn
+    # Get equations fix                                                                 # process is not custom
+    toReturn = GROUPING.getEquations(toReturn, _math_keywords, custom_variables, _data_keywords) if not custom_library else toReturn
 
     return toReturn if toReturn != [] else None
 
@@ -134,27 +132,6 @@ def tryInt(num):
         return int(num)
     else:
         return num
-
-
-'''def conversion(INFO,WON):
-    # Unpack conversion info
-    a,conv = INFO
-
-    if conv in convert_keywords['dir_pow_flex']:
-        a = WON or custom_variables.get(a,a)
-
-        try:
-            a = numify(a)
-            if conv == 'squared':
-                return round(a**2)
-            elif conv == 'tripled':
-                return round(a**3)
-            elif conv == 'quadrupled':
-                return round(a**4)
-            elif conv == 'turkied':
-                return round(a**5)
-        except:
-            COMMUNICATION.FORMAT.to_error(f'Could not bring {a} to power',botaudio)'''
             
 def custom_processing(context, deletion=False):
     global botaudio
@@ -179,16 +156,14 @@ def custom_processing(context, deletion=False):
             find = text # set find to text for later confirmation
 
         elif not find:
-            # Find first closest match
+            # Find first match
             for k,v in lib.items():
                 find = k.find(text)
                 if find != -1:
                     if deletion:
-                        # delete key from library
-                        find = k
+                        find = k    # set find to key
                     else:
                         find = v    # set find to value
-
                     break
                 else:
                     find = None
@@ -209,51 +184,27 @@ def custom_processing(context, deletion=False):
 
                 else:   # must be n, or no
                     COMMUNICATION.FORMAT.normal(f"Removal cancelled",out=botaudio)
-
-            elif isinstance(find, dict):
-                X = extract(find, isinstance(find, dict))
-                COMMUNICATION.FORMAT.to_group(f"{X}",out=botaudio)
-
-            elif isinstance(find,list):
-                X = COMMUNICATION.FORMAT.to_group(find, rtn=True,alone=True)
-                COMMUNICATION.FORMAT.normal(f"{X}",out=botaudio)
-
             else:
                 COMMUNICATION.FORMAT.normal(f"{find}",out=botaudio)
 
     if not lib or not find:
-        COMMUNICATION.FORMAT.normal(f"{text}, is not found in this library", out=botaudio)
+        COMMUNICATION.FORMAT.to_error(f"{text}, is not found in this library", out=botaudio)
 
 def toBinaryOp(eq=[]):
     for i in range(len(eq)):
         _ = eq[i]
         if _ in math_keywords['dir_add']:
             eq[i] = '+'
-        elif _ in math_keywords['pas_add']:
-            eq[i+2] = '+'
-            eq[i] = None
         elif _ in math_keywords['dir_sub']:
             eq[i] = '-'
-        elif _ in math_keywords['pas_sub']:
-            eq[i+2] = '-'
-            eq[i] = None
         elif _ in math_keywords['dir_mult']:
             eq[i] = '*'
-        elif _ in math_keywords['pas_mult']:
-            eq[i+2] = '*'
-            eq[i] = None
         elif _ in math_keywords['dir_div']:
             eq[i] = '/'
-        elif _ in math_keywords['pas_div']:
-            eq[i+2] = '/'
-            eq[i] = None
         elif _ in math_keywords['dir_pow']:
             eq[i] = '^'
         elif _ in math_keywords['assignment']:
             eq[i] = '='
-
-    while None in eq:
-        eq.remove(None)
 
     return eq
 
@@ -268,7 +219,7 @@ def process(text,user, allowBotAudio=False,):
         return 'switch output'
     elif text.lower() in ['switch input']:
         return 'switch input'
-    elif text.lower() in ['repeat that','repeat','can you repeat that','could you repeat that','please repeat that']:
+    elif botaudio and text.lower() in ['repeat that','repeat','can you repeat that','could you repeat that','please repeat that']:
         os.system(AIAUDIOFILE)
         return
     elif text.lower() in ['sarah','sara']:
@@ -289,7 +240,7 @@ def process(text,user, allowBotAudio=False,):
     
 
     for index,_ in enumerate(context):
-        lowered = _.lower() if type(_) is str else '' #Implement this new change#
+        lowered = _.lower() if type(_) is str else ''
 
         # Use Custom Library?
         if custom_library:
@@ -350,9 +301,14 @@ def process(text,user, allowBotAudio=False,):
         elif type(_) is list:
             _ = toBinaryOp(_)
 
-            assign_to = _[0] if '=' in _ else None
+            assign_to = _[0] if '=' in _ and _[0] else None
 
-            # check if assign_to is in user data
+            # Check if assign_to is a number
+            if isNum(assign_to) and not custom_variables.get(assign_to):
+                COMMUNICATION.FORMAT.to_error(f'{assign_to} is a number and cannot be assigned',out=botaudio)
+                continue
+
+            # Check if assign_to is in user data
             if assign_to and _FRAMEWORK.DATA.get(request=USER).get(assign_to):
                 COMMUNICATION.FORMAT.to_error(f'{assign_to} is locked and cannot be assigned',out=botaudio)
                 continue
@@ -361,8 +317,12 @@ def process(text,user, allowBotAudio=False,):
 
 
             groups = GROUPING.GROUP(_)
-            '''for i in range(len(groups)):
-                groups[i] = toBinaryOp(groups[i])'''
+            if groups == -1:    # invalid parentheses
+                eq = ' '.join(_)
+                COMMUNICATION.FORMAT.to_error(f'{eq} is an incomplete equation',out=botaudio)
+                continue
+
+
             result = tryInt(GROUPING.solve(groups))
             if assign_to:   # equation variable assignment
                 result = result or _[-1]    # ... or simple 1:1 assignment
@@ -453,13 +413,3 @@ def process(text,user, allowBotAudio=False,):
             custom_library = True
             COMMUNICATION.FORMAT.normal("I am now linked to your custom library",botaudio)
             return
-
-
-# test_equations = [
-#     '-1 + 2'
-#     #'( 17 - (6 / 2) ) + 4 * 3',
-# ]
-
-# for eq in test_equations:
-
-#     process(eq,'user',False)

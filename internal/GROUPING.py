@@ -11,9 +11,12 @@
 '''
 
 
+from pyaudio import paAL
+
+
 def GROUP(context):
-    equation_queue = list()
-    stack = list()
+    equation_queue = []
+    stack = []
     for i in range(len(context)):
         if context[i] == '(':
             stack.append(i)
@@ -22,6 +25,9 @@ def GROUP(context):
                 # HEY WE FOUND MATCHING OPENING AND CLOSING
                 at = stack.pop()+1
                 equation_queue.append( context[at : i])
+
+    if stack != []:
+        return -1
 
     if equation_queue != []:
         if equation_queue[-1] != context:
@@ -165,33 +171,42 @@ def solve(group):
             
 
         else:
-            return res or (results[-1] if results != [] else None)
+            return res if res is not None else (results[-1] if results != [] else None)
 
 
 
 def getEquations(context, math_keywords=list(), variables=dict(), ignore=list()): # <LIST>, <DICTIONARY>, <LIST>
     new = list()
     
-    ops = ('=','(',')','^', '*', '/', '+', '-')
+    ops = set(['(',')','^', '*', '/', '+', '-','='] + math_keywords)
     signed = False
     eq = list()
+
+    assignment = set(['=','equals','is equal to'])
 
     def checkEq():
         hasOp = sum([_ in ops for _ in eq]) != 0
         ofLength = len(eq) >= 3
-        return hasOp and ofLength
 
-    assignment = ['=','equals','is equal to']
+        a_ops = ops ^ assignment   # arithmetic ops
+        complete = hasOp and ofLength and not (not signed and (eq[0] in a_ops or eq[-1] in a_ops))
+        return complete
 
     for i in range(len(context)):
         left = context[i-1] if i > 0 else None
         right = context[i+1] if i+1 < len(context) else None
+
         ch = context[i]
         var = False     # acts as variable?
-        if i+1 < len(context) and context[i+1] in assignment:
+
+
+        if right and right in assignment:
             var = True
         else:
             var = False
+
+            # ch will = ch if conversion, shorthand notation, or arithmetics is not being performed on ch
+            # else ch will be converted to its variable value, if possible
             ch = ch if left in ignore and (right not in ops and not isNum(right))  else variables.get(ch,ch)
             ch = str(ch)
 
@@ -200,13 +215,15 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
             continue
 
 
-        if not (isNum(ch) or ch in ops or ch in math_keywords or ch in variables.keys() or var) or ch in ignore:
+        # if ch is (not a number, operator, variable, or an assignment variable)
+        #   or ch is to be ignored, post the equation
+        if not (isNum(ch) or ch in ops or ch in variables.keys() or var) or ch in ignore:
             # Not an operand or operator
             # check if eq was built
             if checkEq():
                 new.insert(len(new),eq)
-            elif eq != []:
-                new += eq   # add accidental characters
+            else:
+                new += eq
 
             eq = list()
 
@@ -215,12 +232,10 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
             # append this ch to new context
         else:
 
-            '''First solution for shorthand '''
-            pre = variables.get(left,')' if left == ')' else None)
-            post = variables.get(right,'(' if right == '(' else None)
-
+            '''First solution for shorthand notations'''
             # if pre ch is ')' or numeric | if post ch is '(' or numeric
-            pre,post = pre == ')' or isNum(pre), post == '(' or isNum(post)
+            pre = left == ')' or isNum(variables.get(left,None))
+            post = right == '(' or isNum(variables.get(right,None))
 
             if pre and (eq != [] and eq[-1] != '*') and ch not in ops:  # shorthand * with what comes before ch
                 eq.append('*')
@@ -236,10 +251,10 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
                 signed = True
 
     check = checkEq()
-    if check and eq[0] in ops and not signed:    # signed number
+    if check and eq[0] in ops and not signed:
         new += [''.join(eq)]
         
-    elif check:        
+    elif check:       
         new.insert(len(new),eq)
     else:
         new += eq

@@ -32,7 +32,6 @@ def thenaudio(t):
     try:
         tts = gTTS(text=t, lang='en')
         tts.save(AIAUDIO)
-        time.sleep(0.2) # fixes stutter?
         os.system(AIAUDIO)
         audio = MP3(AIAUDIO)
         time.sleep(audio.info.length)
@@ -59,8 +58,8 @@ def random_selection(collection,super=False):
 
 
 def greet(name, out=False, rtn=False):
-    name = str(name)
-    b, e = '~| ', ' |~'
+    name = ' '+ str(name)
+    b, e = ('~| ', ' |~') if not out else ('','')
 
     output = random_selection(greeting_types)
     if out:
@@ -74,8 +73,7 @@ def greet(name, out=False, rtn=False):
 
 
 def goodbye(name, out=False, rtn=False):
-    text = str(name)
-    b, e = '~| ', ' |~'
+    b, e = ('~| ', ' |~') if not out else ('','')
 
     output = random_selection(goodbye_types)
     if out:
@@ -91,7 +89,7 @@ class FORMAT:
     @staticmethod
     def to_special(text, out=False, rtn=False):
         text = str(text)
-        b,e = '~| ',' |~'
+        b,e = ('~| ',' |~') if not out else ('','')
 
         if out:
             thenaudio("".join([b,text,e]))
@@ -104,7 +102,7 @@ class FORMAT:
     @staticmethod
     def to_error(text,out=False, rtn=False):
         text = str(text)
-        b, e = '!| Error ', " |!"
+        b, e = ('!| Error ', " |!") if not out else ('','')
 
         if out:
             thenaudio("".join([b,text,e]))
@@ -117,7 +115,7 @@ class FORMAT:
     @staticmethod
     def to_answer(text,out=False, rtn=False):
         text = str(text)
-        b, e = '~| ',' |~'
+        b, e = ('=| ',' |=') if not out else ('','')
 
         a_t = random_selection(answer_types)
         if a_t[0] == 'intro':
@@ -146,7 +144,7 @@ class FORMAT:
     @staticmethod
     def normal(text,out=False, rtn=False):
         text = str(text)
-        b,e = '| ',' |'
+        b,e = ('| ',' |') if not out else ('','')
 
         if out:
             thenaudio("".join([b,text,e]))
@@ -161,7 +159,7 @@ class FORMAT:
 
         collection = [str(el) for el in collection]
 
-        b, e = '| ', ' |'
+        b, e = ('| ', ' |') if not out else ('','')
 
         limit = 10
 
@@ -184,3 +182,4 @@ class FORMAT:
                 return text
             else:
                 print(text)
+

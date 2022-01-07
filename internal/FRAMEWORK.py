@@ -12,7 +12,7 @@ import json
 def extract(collection, isdict=False):
     a = list()
     if isdict:
-        for key, _ in collection.items():
+        for _ in collection.values():
             if isinstance(_, (int, str)):
                 a.append(_)
             elif isinstance(_, (list, tuple, set, dict)):

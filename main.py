@@ -82,7 +82,11 @@ def srcheck():
         return False
 
 value_error = False
-r = sr.Recognizer()
+
+check = srcheck()
+r = sr.Recognizer() if check else None
+Microphone = sr.Microphone() if check else None
+
 while __on__:
     print()   # So each run output is seperated
     #For typing
@@ -91,7 +95,7 @@ while __on__:
         if run == 'shutdown':
             break
         elif run == 'switch input':
-            if srcheck():
+            if check:
                 input_type = 'audible'
                 COMMUNICATION.FORMAT.normal(f"Input switched to microphone", out=botaudio)
         elif run == 'switch output':
@@ -99,14 +103,12 @@ while __on__:
             COMMUNICATION.FORMAT.normal(f'Bot audio switch to {botaudio}', out=False)
 
     #For microphone
-    elif srcheck() and input_type == 'audible':
+    elif input_type == 'audible':
         try:
-            print(r'Listening ~', end='')
-            with sr.Microphone() as source:
-                r.adjust_for_ambient_noise(source)
+            with Microphone as source:
+                r.adjust_for_ambient_noise(source,duration=0.5)
                 audio = r.listen(source)
 
-                print(r'')
                 text = r.recognize_google(audio)
                 COMMUNICATION.FORMAT.normal(f'{text}?', out=botaudio)
                 run = Processor.process(text,USER, botaudio)
