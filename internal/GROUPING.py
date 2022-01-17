@@ -25,7 +25,7 @@ def GROUP(context):
 
 
 def FIT(original, subs):
-    if subs == [] or original == []:
+    if not subs or not original:
         return original
 
     new = list()

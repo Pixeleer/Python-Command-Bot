@@ -1,53 +1,40 @@
 #!/usr/bin/python3
 
 if __name__ != '__main__':
-    from internal import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData, GROUPING
+    from internal import COMMUNICATION,UpdateData, GROUPING, DBManager
 else:
-    import COMMUNICATION,FRAMEWORK as _FRAMEWORK, UpdateData
-    import GROUPING
+    import COMMUNICATION,UpdateData, GROUPING, DBManager
 
-import os
+import os,json
 from random import randint,choice
 
 DATABASE,AIAUDIOFILE = 'DATABASE.json','Sarah.mp3'
+
 USER = None
+botaudio, custom_library = False,False
 
+extract = DBManager.extract
 
-
-botaudio, custom_library, grouping = False,False,False
-
-extract = _FRAMEWORK.extract
-
+'''
 allowed_context = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y',
                    'z','_',"'",'"'
-]
+]'''
 special_characters = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '-', '=', '[', ']', '{', '}', ';',
-                      ':','|', ',', '<', '.', '>', '/', '?'
+                      ':','|', ',', '<', '.', '>', '/', '?','_'
 ]
 
+global math_keywords,convert_keywords,data_keywords
+math_keywords,convert_keywords,data_keywords = {},{},{}
+with open('internal/keywords.JSON','r') as f:
+    KEYWORDS = json.load(f)
+    math_keywords = KEYWORDS['math']
+    convert_keywords = KEYWORDS['convert']
+    data_keywords = KEYWORDS['data']
 # Passive keywords is unsupported till future versions
-math_keywords = {
-    'grouping': ['(', ')'],
-    'assignment': ['=','equals','equal'],
-    'dir_add': ['plus','+','combined with','joined with'],
-    'dir_sub' : ['minus','-','taken from'],
-    'dir_mult': ['times', '*'],
-    'dir_div': ['divided by', '/', 'over'],
-    'dir_pow': ['^', '**','to the power of','to the'],
-}
 
-
-
-convert_keywords = {'dir_pow_flex': ['squared','tripled','quadrupled','turkied']}
-data_keywords = {
-    'dir_return': ['get',"what's",'what is','who is','what are','what does','define', 'what is the','is it'],
-    'pas_return': ['can i have','can you tell me'],
-    'enter_CL': ['custom', 'custom library','enter custom library', 'open custom library', 'enter custom', 'open custom'],
-    'leave_CL': ['exit', 'leave','leave library','exit library', 'leave custom', 'exit custom'],
-    'add_to_CL': ['learn','acknowledge', 'add'],
-    'del_from_CL': ['delete', 'del', 'remove']
-}
 custom_variables = {}
+
+
 def group(collection):
     result = None
     for _ in [_ for i,_ in collection.items()]:
@@ -65,14 +52,14 @@ KEYWORDS = _math_keywords+_data_keywords
 
 def ContextV4(string):
     array = list(string)
-    toReturn = list()
+    toReturn = []
 
     delim = 'OEBOFXO'
-    delimat = list()
+    delimat = []
     curIndex = 0
     ignore = set()
 
-    userlib = _FRAMEWORK.DATA.get(request=USER)
+    userlib = DBManager.DATA.get(request=USER)
     for keyword in KEYWORDS+list(userlib.keys())+list(custom_variables.keys()):    # KEEP THIS ORDER (KEYWORDS,userlib.keys(),custom_variables.keys())
         foundAt = string.find(keyword,curIndex)
 
@@ -99,7 +86,7 @@ def ContextV4(string):
     array = ''.join(array).split(delim)
 
     for i,text in enumerate(array):
-        if text == '':
+        if not text:
             # array.remove(text) no need
             continue
         elif text not in KEYWORDS:
@@ -141,13 +128,23 @@ def custom_processing(context, deletion=False):
 
     '''Use of nicknames has been discontinued'''
     #global nickname
-    #nickname = _FRAMEWORK.DATA.get(f"{USER}.-custom-libray.nickname")
+    #nickname = DBManager.DATA.get(f"{USER}.-custom-libray.nickname")
 
-    if context[0] in data_keywords['dir_return']+data_keywords['pas_return']:
+    articles = ['a','an','the']   # list of definte articles
+
+    if context[0].lower() in data_keywords['dir_return']+data_keywords['pas_return']:
         context.pop(0)
+        if not context: # context is empty
+            return
+
+    if context[0].lower() in articles:
+        context.pop(0)
+        if not context: 
+            return
 
     text = ' '.join(context)
-    lib = _FRAMEWORK.DATA.get(request=f'{USER}.-custom-library')
+    lib = DBManager.DATA.get(request=f'{USER}.-custom-library')
+    guess = False   # if request wasn't directly found
 
     
     if lib:
@@ -160,6 +157,7 @@ def custom_processing(context, deletion=False):
             for k,v in lib.items():
                 find = k.find(text)
                 if find != -1:
+                    guess = True
                     if deletion:
                         find = k    # set find to key
                     else:
@@ -167,6 +165,10 @@ def custom_processing(context, deletion=False):
                     break
                 else:
                     find = None
+
+        if not lib or not find:
+            COMMUNICATION.FORMAT.to_error(f"{text}, is not found in this library", out=botaudio)
+            return
 
         
         if find:
@@ -177,7 +179,7 @@ def custom_processing(context, deletion=False):
                     answer = input(f'Invalid answer\nDelete {find}? [y/n] -> ')
 
                 if answer in ('y','yes'):
-                    res = _FRAMEWORK.DATA.remove_data(p=f'{USER}.-custom-library.{find}')
+                    res = DBManager.DATA.remove_data(p=f'{USER}.-custom-library.{find}')
   
                                         # if res is None, succesful removal
                     COMMUNICATION.FORMAT.normal(res or f"{find}, has been removed from library",out=botaudio)
@@ -185,10 +187,8 @@ def custom_processing(context, deletion=False):
                 else:   # must be n, or no
                     COMMUNICATION.FORMAT.normal(f"Removal cancelled",out=botaudio)
             else:
+                find = find + ('?' if guess else '')
                 COMMUNICATION.FORMAT.normal(f"{find}",out=botaudio)
-
-    if not lib or not find:
-        COMMUNICATION.FORMAT.to_error(f"{text}, is not found in this library", out=botaudio)
 
 def toBinaryOp(eq=[]):
     for i in range(len(eq)):
@@ -209,7 +209,7 @@ def toBinaryOp(eq=[]):
     return eq
 
 def process(text,user, allowBotAudio=False,):
-    global botaudio,custom_library,adding, USER
+    global botaudio,custom_library, USER
     botaudio = allowBotAudio
     USER = user
 
@@ -249,14 +249,6 @@ def process(text,user, allowBotAudio=False,):
                 COMMUNICATION.FORMAT.normal(f"Returning to default library", botaudio)
                 return None #Finished
             elif lowered in data_keywords['add_to_CL']:
-                '''i = index
-                while i < len(context):
-                    if context[i] not in ['is', 'equals']:
-                        i += 1
-                    else:
-                        break'''
-
-
                 # Label_Anser divide
                 assign_syntax = -1
                 j_context = ' '.join(context)
@@ -274,12 +266,15 @@ def process(text,user, allowBotAudio=False,):
                     Value = " ".join(context[as_i+1:])     # Possible out-of-range exepction
 
                     Value = custom_variables.get(Value,Value)   # Attempt to use Custom variable, else value
-                    '''while i < len(context):
-                        Value += context[i]
-                        i += 1'''
-                    
-                    if Label != '' and Value != '':
-                        _FRAMEWORK.DATA.add_data(f'{USER}.-custom-library', {Label: Value})
+
+                    # remove odd punctuation
+                    tostrip = ''.join(special_characters)
+                    Label = Label.strip(tostrip)
+                    Value = Value.strip(tostrip)
+
+                    if Label and Value:
+
+                        DBManager.DATA.add_data(f'{USER}.-custom-library', {Label: Value})
                         COMMUNICATION.FORMAT.normal(f"Given information has been learned", botaudio)
                 except:
                     COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
@@ -309,7 +304,7 @@ def process(text,user, allowBotAudio=False,):
                 continue
 
             # Check if assign_to is in user data
-            if assign_to and _FRAMEWORK.DATA.get(request=USER).get(assign_to):
+            if assign_to and DBManager.DATA.get(request=USER).get(assign_to):
                 COMMUNICATION.FORMAT.to_error(f'{assign_to} is locked and cannot be assigned',out=botaudio)
                 continue
 
@@ -367,15 +362,15 @@ def process(text,user, allowBotAudio=False,):
                 continue
 
 
-            keys = _FRAMEWORK.DATA.get(f'{USER}').keys()
+            keys = DBManager.DATA.get(f'{USER}').keys()
 
             if request.lower() in keys:
-                value = _FRAMEWORK.DATA.get(f'{USER}.{request}')
+                value = DBManager.DATA.get(f'{USER}.{request}')
 
                 if request.lower() == 'password':
                     COMMUNICATION.FORMAT.to_special(f'That data is locked',botaudio)
                 else:
-                    result = _FRAMEWORK.DATA.get(f'{USER}.{request}')
+                    result = DBManager.DATA.get(f'{USER}.{request}')
                     if result is not None:
                         c_request = request.split('_')
                         c_request = ' '.join(c_request)
@@ -398,7 +393,7 @@ def process(text,user, allowBotAudio=False,):
                 # TO BE IMPLEMENTED LATER
                 '''request = context[index+2]
                 try:
-                    info = _FRAMEWORK.DATA.get(f'AI.{request}')
+                    info = DBManager.DATA.get(f'AI.{request}')
                     COMMUNICATION.FORMAT.normal(info,botaudio)
                 except:
                     COMMUNICATION.FORMAT.normal(f'That information is not found in my database',botaudio)'''

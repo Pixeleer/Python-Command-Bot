@@ -6,7 +6,7 @@ except:
     with open(DATABASE,'w') as db:  # To initialize a database if none exists
         db.write('{}')
 
-from internal import FRAMEWORK as _FRAMEWORK,Processor,COMMUNICATION,UpdateData
+from internal import DBManager as DBManager,Processor,COMMUNICATION,UpdateData
 import warnings
 
 
@@ -15,14 +15,14 @@ __on__,input_type,botaudio = True,'typed',False
 def startup():
     COMMUNICATION.FORMAT.normal('Login. Please enter your Username', out=botaudio)
     user_name = input(f'[Login]\nPlease enter your Username -> ')
-    user = _FRAMEWORK.DATA.get(user_name)
+    user = DBManager.DATA.get(user_name)
     if user: # TYPE: DICT
         COMMUNICATION.FORMAT.normal('Please enter your password', out=botaudio)
         pwd = input(f'Please enter your password -> ')
 
         while pwd != user['password']:
-            COMMUNICATION.FORMAT.normal('Error, Incorrect Password! Please try again', out=botaudio)
-            print('\nError, Incorrect Password! Please try again -> ')
+            COMMUNICATION.FORMAT.to_error('Error, Incorrect Password! Please try again', out=botaudio)
+            print('\nError, Incorrect Password! Please try again')
 
             COMMUNICATION.FORMAT.normal('Please enter your password', out=botaudio)
             pwd = input(f'Please enter your password -> ')
@@ -41,7 +41,7 @@ def startup():
 
 
     while new_pwd != confirm_pwd:
-        COMMUNICATION.FORMAT.normal('ERROR. Your entries did not match! Please try again', out=botaudio)
+        COMMUNICATION.FORMAT.to_error('ERROR. Your entries did not match! Please try again', out=botaudio)
         print('\nERROR! Your entries did not match! Please try again')
 
         COMMUNICATION.FORMAT.normal('Please type a safe password to be linked with your account', out=botaudio)
@@ -50,12 +50,12 @@ def startup():
         COMMUNICATION.FORMAT.normal('Please re-enter your password for confirmation', out=botaudio)
         confirm_pwd = input(f'Please re-enter your password for confirmation -> ')
 
-    _FRAMEWORK.DATA.create_directory(p=None,dir_name=user_name)
-    _FRAMEWORK.DATA.add_data(p=f'{user_name}', new_data={"password": new_pwd})
-    _FRAMEWORK.DATA.create_directory(p=f'{user_name}',dir_name='-custom-library')  # create custom library directory
+    DBManager.DATA.create_directory(p=None,dir_name=user_name)
+    DBManager.DATA.add_data(p=f'{user_name}', new_data={"password": new_pwd})
+    DBManager.DATA.create_directory(p=f'{user_name}',dir_name='-custom-library')  # create custom library directory
 
     for preset_data in 'morning,afternoon,night,evening,meridiem,time,date,today,day,month,year,thread,process,system flags'.split(','):
-        _FRAMEWORK.DATA.add_data(p=f'{user_name}', new_data={preset_data:''})
+        DBManager.DATA.add_data(p=f'{user_name}', new_data={preset_data:''})
 
     COMMUNICATION.FORMAT.normal('Thank you! Your account is now setup and ready', out=botaudio)
     print('\nThank you! Your account is now setup and ready\n')

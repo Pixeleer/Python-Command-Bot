@@ -1,0 +1,22 @@
+{
+    "math" : {
+        "grouping": ["(", ")"],
+        "assignment": ["=","equals","equal"],
+        "dir_add": ["plus","+","combined with","joined with"],
+        "dir_sub" : ["minus","-","taken from"],
+        "dir_mult": ["times", "*"],
+        "dir_div": ["divided by", "/", "over"],
+        "dir_pow": ["^", "**","to the power of","to the"]
+    },
+
+    "convert" : {"dir_pow_flex": ["squared","tripled","quadrupled","turkied"]},
+
+    "data" : {
+        "dir_return": ["get","what's","what is","who is","what are","what does","define", "what is the","is it"],
+        "pas_return": ["can i have","can you tell me"],
+        "enter_CL": ["custom", "custom library","enter custom library", "open custom library", "enter custom", "open custom"],
+        "leave_CL": ["exit", "leave","leave library","exit library", "leave custom", "exit custom"],
+        "add_to_CL": ["learn","acknowledge", "add"],
+        "del_from_CL": ["delete", "del", "remove"]
+    }
+}
