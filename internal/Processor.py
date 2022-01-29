@@ -349,6 +349,8 @@ def process(text,user, allowBotAudio=False,):
             # base case
             if type(request) is not str:
                 continue
+            else:
+                request = (request.lower()).strip(''.join(special_characters))
 
 
             if request in custom_variables:

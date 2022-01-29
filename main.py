@@ -101,6 +101,7 @@ while __on__:
     #For microphone
     elif input_type == 'audible':
         try:
+            print("I'm Listening ~(=...")
             with Microphone as source:
                 r.adjust_for_ambient_noise(source,duration=0.5)
                 audio = r.listen(source)
