@@ -45,7 +45,7 @@ def updatetime():
     if afternoon:
         DBManager.DATA.edit_directory(f'{USER}.afternoon', new_value='yes')
         DBManager.DATA.edit_directory(f'{USER}.meridiem', new_value='pm')
-        meridiem = ['am', 'in the afternoon']
+        meridiem = ['pm', 'in the afternoon']
     else:
         DBManager.DATA.edit_directory(f'{USER}.afternoon', new_value='no')
     if night:

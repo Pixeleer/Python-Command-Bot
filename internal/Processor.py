@@ -60,7 +60,13 @@ def ContextV4(string):
     ignore = set()
 
     userlib = DBManager.DATA.get(request=USER)
-    for keyword in KEYWORDS+list(userlib.keys())+list(custom_variables.keys()):    # KEEP THIS ORDER (KEYWORDS,userlib.keys(),custom_variables.keys())
+    global WORDS
+    WORDS = KEYWORDS+list(userlib.keys())+list(custom_variables.keys())
+
+    if custom_library:
+        WORDS = list(set(WORDS)^set(_math_keywords))
+
+    for keyword in WORDS:    # KEEP THIS ORDER (KEYWORDS,userlib.keys(),custom_variables.keys())
         foundAt = string.find(keyword,curIndex)
 
         while foundAt != -1 and foundAt not in ignore:
@@ -96,9 +102,8 @@ def ContextV4(string):
                 text = text[1:]
             toReturn.append(text)
 
-    # Get equations fix                                                                 # process is not custom
+    # Get equations fix                                                              # process is not custom
     toReturn = GROUPING.getEquations(toReturn, _math_keywords, custom_variables, _data_keywords) if not custom_library else toReturn
-
     return toReturn if toReturn != [] else None
 
 
@@ -232,6 +237,7 @@ def process(text,user, allowBotAudio=False,):
         return
 
     context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
+
     #print(context) #FOR DEBUG
 
     if context is None:
@@ -311,14 +317,13 @@ def process(text,user, allowBotAudio=False,):
             _ = _[2:] if assign_to is not None else _
 
 
-            groups = GROUPING.GROUP(_)
+            '''groups = GROUPING.GROUP(_)
             if groups == -1:    # invalid parentheses
                 eq = ' '.join(_)
                 COMMUNICATION.FORMAT.to_error(f'{eq} is an incomplete equation',out=botaudio)
-                continue
+                continue'''
 
-
-            result = tryInt(GROUPING.solve(groups))
+            result = tryInt(GROUPING.solve(_))
             if assign_to:   # equation variable assignment
                 result = result or _[-1]    # ... or simple 1:1 assignment
                 custom_variables[assign_to] = result

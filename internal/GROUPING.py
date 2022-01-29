@@ -1,52 +1,3 @@
-def GROUP(context):
-    equation_queue = []
-    stack = []
-    for i in range(len(context)):
-        if context[i] == '(':
-            stack.append(i)
-        elif context[i] == ')':
-            if len(stack) != 0:
-                # HEY WE FOUND MATCHING OPENING AND CLOSING
-                at = stack.pop()+1
-                equation_queue.append( context[at : i])
-
-    if stack != []:
-        return -1
-
-    if equation_queue != []:
-        if equation_queue[-1] != context:
-            equation_queue.append(context)
-        elif equation_queue[-1] != context[1:-1]:
-            equation_queue.append(context[1:-1])
-
-    return equation_queue if equation_queue != [] else [context]
-
-
-
-
-def FIT(original, subs):
-    if not subs or not original:
-        return original
-
-    new = list()
-    opened = 0
-
-    stack = list()
-    for i in range(len(original)):
-        if original[i] == '(':
-            stack.append(i)
-            opened += 1
-        elif original[i] == ')':
-            if len(stack) != 0:
-                new.append(subs.pop())
-                stack.pop()
-
-            opened -= 1
-        elif opened == 0:
-            new.append(original[i])
-
-    return new if new != original else subs
-
 def numify(num):
     try:
         return float(num)
@@ -60,7 +11,7 @@ def PEMDAS(eq=[]):
     if len(eq) == 1:
         return eq[0]
     elif len(eq) < 3:
-        return 'err'
+        return
 
     operators = []
     operands = []
@@ -123,7 +74,7 @@ def PEMDAS(eq=[]):
 
         a,b = numify(a),numify(b)
         if not (isNum(a) and isNum(b)):
-            return 'err'
+            return
 
         used += _
 
@@ -135,31 +86,31 @@ def PEMDAS(eq=[]):
     return res
 
 
-def solve(group):
-    results = list()
+def solve(eq):
+    stack = list()
 
-    for i in range(len(group)):
-        # each group is a piece of the next
-        # get the index of the first ch in current group
-        # use that index as a position for the res in the next group
-        context = group[i]
-        res = PEMDAS(context)
-        if res == 'err':
-            return None
+    i = 0
+    while i < len(eq):
+        ch = eq[i]
+        
+        if ch == '(':
+            stack.append(i)
+        elif ch == ')' and stack != []:
+            b,e = stack.pop(),i
+            inner = eq[b+1:e]
 
-        if i+1 < len(group):
-            results.append(res)
-            rev = list(reversed(results))
-            fitting = FIT(group[i+1], rev)
-            group[i+1] = fitting
+            for n in range(b,e+1):
+                eq.pop(b)
+                
+            eq.insert(b, solve(inner))
+            i -= e
             
+        i += 1
 
-        else:
-            return res if res is not None else (results[-1] if results != [] else None)
+    res = PEMDAS(eq)
+    return res
 
-
-
-def getEquations(context, math_keywords=list(), variables=dict(), ignore=list()): # <LIST>, <DICTIONARY>, <LIST>
+def getEquations(context, math_keywords=list(), variables=dict(), ignore=list()): # <LIST>, <DICTIONARY>, <LIST
     new = list()
     
     ops = set(['(',')','^', '*', '/', '+', '-','='] + math_keywords)
@@ -172,7 +123,8 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
         hasOp = sum([_ in ops for _ in eq]) != 0
         ofLength = len(eq) >= 3
 
-        a_ops = ops ^ assignment   # arithmetic ops
+        a_ops = (ops ^ assignment) ^ set(['(',')'])   # arithmetic ops
+
         complete = hasOp and ofLength and not (not signed and (eq[0] in a_ops or eq[-1] in a_ops))
         return complete
 
@@ -231,14 +183,14 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
 
             signed = False
 
-            if eq[0] in ('+','-') and not (i > 0 and left.isdigit()):   # Signed number
-                signed = True
+            #if eq[0] in ('+','-') and not (left.isdigit()):   # Signed number
+            if ch in ['+', '-']:
+                if not left or (left and not left.isdigit()): # no left and left is not a number
+                    signed = True if right.isdigit() else False
+                
 
     check = checkEq()
-    if check and eq[0] in ops and not signed:
-        new += [''.join(eq)]
-        
-    elif check:       
+    if check:       
         new.insert(len(new),eq)
     else:
         new += eq

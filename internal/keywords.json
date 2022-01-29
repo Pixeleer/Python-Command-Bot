@@ -16,7 +16,7 @@
         "pas_return": ["can i have","can you tell me"],
         "enter_CL": ["custom", "custom library","enter custom library", "open custom library", "enter custom", "open custom"],
         "leave_CL": ["exit", "leave","leave library","exit library", "leave custom", "exit custom"],
-        "add_to_CL": ["learn","acknowledge", "add"],
+        "add_to_CL": ["learn","acknowledge", "insert"],
         "del_from_CL": ["delete", "del", "remove"]
     }
 }
