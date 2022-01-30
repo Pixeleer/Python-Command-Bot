@@ -8,6 +8,7 @@ def isNum(num):
     return isinstance(numify(num), (int,float))
 
 def PEMDAS(eq=[]):
+
     if len(eq) == 1:
         return eq[0]
     elif len(eq) < 3:
@@ -85,7 +86,6 @@ def PEMDAS(eq=[]):
    
     return res
 
-
 def solve(eq):
     stack = list()
 
@@ -110,22 +110,23 @@ def solve(eq):
     res = PEMDAS(eq)
     return res
 
-def getEquations(context, math_keywords=list(), variables=dict(), ignore=list()): # <LIST>, <DICTIONARY>, <LIST
-    new = list()
-    
-    ops = set(['(',')','^', '*', '/', '+', '-','='] + math_keywords)
-    signed = False
-    eq = list()
+def getEquations(context, math_keywords=list(), variables=dict(), ignore=list()):
+    new = []
+    eq = []
 
+
+    ops = set(['(',')','^', '*', '/', '+', '-','='] + math_keywords)
     assignment = set(['=','equals','is equal to'])
+    a_ops = (ops ^ assignment) ^ set(['(',')'])  # arithmetic ops
+
+    signed = False
 
     def checkEq():
         hasOp = sum([_ in ops for _ in eq]) != 0
         ofLength = len(eq) >= 3
+        tailed = ofLength and (eq[0] in a_ops or eq[-1] in a_ops)    # has arithmetic op at beginning or end
 
-        a_ops = (ops ^ assignment) ^ set(['(',')'])   # arithmetic ops
-
-        complete = hasOp and ofLength and not (not signed and (eq[0] in a_ops or eq[-1] in a_ops))
+        complete = hasOp and ofLength and not (not signed and tailed)
         return complete
 
     for i in range(len(context)):
@@ -173,17 +174,17 @@ def getEquations(context, math_keywords=list(), variables=dict(), ignore=list())
             pre = left == ')' or isNum(variables.get(left,None))
             post = right == '(' or isNum(variables.get(right,None))
 
-            if pre and (eq != [] and eq[-1] != '*') and ch not in ops:  # shorthand * with what comes before ch
+            if pre and (eq != [] and eq[-1] != '*') and (ch not in ops or ch == '('):  # shorthand * with what comes before ch
                 eq.append('*')
  
             eq.append(ch)
 
-            if post and ch not in ops:  # shorthand * with what comes after ch
+            if post and (ch not in ops or ch == ')'):  # shorthand * with what comes after ch
                 eq.append('*')
 
             signed = False
 
-            #if eq[0] in ('+','-') and not (left.isdigit()):   # Signed number
+            # Signed number solution
             if ch in ['+', '-']:
                 if not left or (left and not left.isdigit()): # no left and left is not a number
                     signed = True if right.isdigit() else False

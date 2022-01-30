@@ -63,7 +63,7 @@ def startup():
 
 
 USER = startup()  # USER is just user's user_name
-UpdateData.USER = USER
+
 print()
 greet = COMMUNICATION.random_selection(COMMUNICATION.greeting_types, super=True)
 COMMUNICATION.FORMAT.to_special(f'{greet}, {USER}!', botaudio)

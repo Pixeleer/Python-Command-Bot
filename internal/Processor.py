@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 if __name__ != '__main__':
-    from internal import COMMUNICATION,UpdateData, GROUPING, DBManager
+    from internal import COMMUNICATION,UpdateData, DBManager, ARITHEMETIC
 else:
-    import COMMUNICATION,UpdateData, GROUPING, DBManager
+    import COMMUNICATION,UpdateData, ARITHEMETIC, DBManager
 
 import os,json
 from random import randint,choice
@@ -15,10 +15,6 @@ botaudio, custom_library = False,False
 
 extract = DBManager.extract
 
-'''
-allowed_context = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y',
-                   'z','_',"'",'"'
-]'''
 special_characters = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '-', '=', '[', ']', '{', '}', ';',
                       ':','|', ',', '<', '.', '>', '/', '?','_'
 ]
@@ -93,17 +89,15 @@ def ContextV4(string):
 
     for i,text in enumerate(array):
         if not text:
-            # array.remove(text) no need
             continue
         elif text not in KEYWORDS:
             toReturn += text.split()    #split normal words by white space
         else:
-            if text[0] == ' ':
-                text = text[1:]
+            text.lstrip(); text.rstrip() # removal left & right whitespace
             toReturn.append(text)
 
-    # Get equations fix                                                              # process is not custom
-    toReturn = GROUPING.getEquations(toReturn, _math_keywords, custom_variables, _data_keywords) if not custom_library else toReturn
+    # Get equations fix                                                                                # process is not custom
+    toReturn = ARITHEMETIC.getEquations(toReturn, _math_keywords, custom_variables, _data_keywords) if not custom_library else toReturn
     return toReturn if toReturn != [] else None
 
 
@@ -129,7 +123,7 @@ def custom_processing(context, deletion=False):
     global botaudio
         
 
-    UpdateData.all()
+    UpdateData.all(USER)
 
     '''Use of nicknames has been discontinued'''
     #global nickname
@@ -232,8 +226,8 @@ def process(text,user, allowBotAudio=False,):
         COMMUNICATION.FORMAT.normal(choice(a),botaudio)
         return
     elif text.lower() in ['hey','hi','hello','howdy']:
-        a = ['Hey!','Hi!','Hello!','Howdy!','Salutations!',f'Hi {USER}!']
-        COMMUNICATION.FORMAT.normal(choice(a),botaudio)
+        a = ['Hey','Hi','Hello','Howdy','Salutations']
+        COMMUNICATION.FORMAT.normal(f'{choice(a)} {USER}!',botaudio)
         return
 
     context = ContextV4(text) # List of characters split and grouped into keywords, words or numbers
@@ -260,8 +254,8 @@ def process(text,user, allowBotAudio=False,):
                 j_context = ' '.join(context)
                 try:
                     for case in ['is','equals','=','is equal to','is = to', 'is =']:
-                        assign_syntax = case if j_context.find(case) != -1 else -1
-                        if assign_syntax != -1:
+                        if j_context.find(case) != -1:
+                            assign_syntax = case
                             break
 
                     assert assign_syntax != -1
@@ -290,12 +284,12 @@ def process(text,user, allowBotAudio=False,):
                 try:
                     custom_processing(context[index+1:], deletion=True)
                 except:
-                    # Todelete likely not specified
+                    # (to delete) likely not specified
                     COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
             else:
                 custom_processing(context)
 
-            return  # Quick fix to engage custom library only once       (Solution?)
+            return  # Quick fix to engage custom library only once       (Another Solution?)
 
 
         ##  IsMath?
@@ -317,13 +311,7 @@ def process(text,user, allowBotAudio=False,):
             _ = _[2:] if assign_to is not None else _
 
 
-            '''groups = GROUPING.GROUP(_)
-            if groups == -1:    # invalid parentheses
-                eq = ' '.join(_)
-                COMMUNICATION.FORMAT.to_error(f'{eq} is an incomplete equation',out=botaudio)
-                continue'''
-
-            result = tryInt(GROUPING.solve(_))
+            result = tryInt(ARITHEMETIC.solve(_))
             if assign_to:   # equation variable assignment
                 result = result or _[-1]    # ... or simple 1:1 assignment
                 custom_variables[assign_to] = result
@@ -336,7 +324,7 @@ def process(text,user, allowBotAudio=False,):
                 COMMUNICATION.FORMAT.to_error(f"Sorry, I don't understand", botaudio)
 
         elif lowered in data_keywords['dir_return']:    # Returning Data Queries
-            UpdateData.all()
+            UpdateData.all(USER)
             if not (index+1 < len(context)):
                 return
 
@@ -395,21 +383,15 @@ def process(text,user, allowBotAudio=False,):
                     else:
                         COMMUNICATION.FORMAT.to_error(f"Seems I don't have that information. Sorry!",botaudio)
 
-            elif index+2 < len(context) and context[index+1] == 'your':
+            elif index+2 < len(context) and context[index+1] == 'your': # TO BE IMPLEMENTED LATER
                 COMMUNICATION.FORMAT.to_special('BOT DATABASE NOT YET IMPLEMENTED',botaudio)
-                # TO BE IMPLEMENTED LATER
-                '''request = context[index+2]
-                try:
-                    info = DBManager.DATA.get(f'AI.{request}')
-                    COMMUNICATION.FORMAT.normal(info,botaudio)
-                except:
-                    COMMUNICATION.FORMAT.normal(f'That information is not found in my database',botaudio)'''
 
         elif lowered == 'say':
-            try:
+            if index+1 < len(context):
                 COMMUNICATION.FORMAT.normal(" ".join(context[index+1:]), botaudio)
-            except:
-                pass
+                return  # only run once, maybe?
+            else:
+                COMMUNICATION.FORMAT.normal('What do you want me to say?', botaudio)
 
         elif lowered in data_keywords['enter_CL']:
             custom_library = True
